@@ -1,4 +1,4 @@
-# Claude Code Instructions for Strategy-Formulation
+# Claude Code Instructions for InvestmentApp
 
 > This file is automatically read by Claude Code at the start of each session.
 > It contains project-specific instructions, guidelines, and configuration.
@@ -37,8 +37,8 @@
 - **Consider implications** - Think through the downstream effects of any change before implementing
 
 ### 3. Quality Assurance
-- **Always test the build before proceeding** - Run `npm run build` or `npx tsc --noEmit` to verify no TypeScript errors
-- **Fix type errors across the outcome** - Don't leave TypeScript errors unresolved
+- **Always test the build before proceeding** - Run backend: `python -m pytest` and frontend: `npm run build` to verify no errors
+- **Fix errors across the codebase** - Don't leave Python or TypeScript errors unresolved
 - **Test implications of changes** - Ensure changes don't break existing functionality
 - **Verify before committing** - Check that all modified files are working correctly
 
@@ -66,18 +66,11 @@ These preferences override Claude Code's default behavior:
 - **Ask clarifying questions** - Better to ask than to assume incorrectly
 
 ### 6. Feature Logging (MANDATORY)
-- **ALWAYS log new features** - When implementing a new feature or functionality, add it to the Features Log page
-- **Location:** `app/admin/features-log/page.tsx` - Update the `INITIAL_FEATURES` array
-- **Required fields for each feature:**
-  - `id`: Unique kebab-case identifier
-  - `name`: Short descriptive name
-  - `description`: What the feature does
-  - `category`: One of 'Foundation' | 'Analysis' | 'Strategy' | 'Settings' | 'UI' | 'Chat' | 'Export' | 'Admin'
-  - `dateCreated`: YYYY-MM-DD format
-  - `filesModified`: Array of file paths that were changed
-  - `tested`: false (default)
-  - `status`: 'Not Tested' (default)
-  - `notes`: '' (empty, user will fill)
+- **ALWAYS log new features** - When implementing a new feature or functionality, document it in `PROJECT_DETAILS.md`
+- **Update the Features section** with:
+  - Feature name and description
+  - Files modified
+  - Date added
 - **This helps the user track and test all features we build**
 
 ### 7. Change Review Protocol (Plan Mode)
@@ -91,8 +84,8 @@ Then review the change through these 4 lenses **in order**, pausing for user fee
 
 #### Lens 1: Architecture
 - Component boundaries and responsibility separation
-- Data flow between client/server/API/database (Next.js App Router patterns)
-- Prisma query patterns and database access (watch for N+1 queries)
+- Data flow between frontend (React) → API (FastAPI) → Database (Neon PostgreSQL)
+- SQLAlchemy async query patterns (watch for N+1 queries)
 - API route design and security (auth, data validation at boundaries)
 
 #### Lens 2: Code Quality
@@ -102,16 +95,16 @@ Then review the change through these 4 lenses **in order**, pausing for user fee
 - Technical debt being introduced or resolved
 
 #### Lens 3: Testing & Verification
-- Does `npx tsc --noEmit` pass?
-- Does `npm run build` succeed?
+- Does the backend start without errors?
+- Does `npm run build` succeed for the frontend?
 - Are there edge cases in the logic that could break silently?
 - For data-driven features: does it handle empty states, nulls, and unexpected input?
 
 #### Lens 4: Performance
-- Database query efficiency (Prisma includes, selects, unnecessary fetches)
-- Component re-render concerns (large state objects, missing memoization)
-- Bundle size impact (large imports, client-side vs server-side boundaries)
-- Caching opportunities (static data, repeated API calls)
+- Database query efficiency (SQLAlchemy eager loading, unnecessary fetches)
+- React component re-render concerns (large state objects, missing memoization)
+- API response times (market data caching, batch requests)
+- Caching opportunities (price data TTL, exchange rates)
 
 #### Presenting Issues
 For each issue found:
@@ -123,10 +116,10 @@ For each issue found:
 
 **Example format:**
 ```
-Issue 1: Component X fetches data on every render
-  A) Add useMemo + dependency array (Recommended) — Low effort, no risk
-  B) Move fetch to server component — Medium effort, requires restructure
-  C) Do nothing — No effort, but will cause lag on large datasets
+Issue 1: Market data API called on every page render
+  A) Add 5-min in-memory cache (Recommended) — Low effort, no risk
+  B) Add Redis cache layer — Medium effort, requires Redis setup
+  C) Do nothing — No effort, but will hit API rate limits
 ```
 
 **CRITICAL:** This protocol supplements, not replaces, the alignment rules in sections 1-1c. The review happens *before* any code is written.
@@ -135,24 +128,42 @@ Issue 1: Component X fetches data on every render
 
 ## Project Context
 
+### About
+**Investment Portfolio Tracker** — A web app for tracking investments across multiple asset classes (Gold, Silver, Crypto, US Stocks, Egyptian Stocks) with live market data, P&L tracking, charts, and price alerts. Displays portfolio value in both USD and EGP.
+
 ### Technology Stack
-- **Framework:** Next.js 15 (App Router) + React 19
-- **Database:** PostgreSQL (Neon) + Prisma ORM
-- **AI:** Google Gemini 2.5 Flash
-- **Styling:** Tailwind CSS v4
-- **Deployment:** Vercel
+- **Backend:** Python + FastAPI (async)
+- **Frontend:** React 19 (Vite)
+- **Database:** PostgreSQL (Neon serverless) + SQLAlchemy (async)
+- **Market Data:** yfinance (stocks), CoinGecko (crypto), free metals/forex APIs
+- **Charts:** Recharts
+- **Styling:** CSS / Tailwind (TBD)
 
 ### Key Directories
-- `app/` - Next.js pages and API routes
-- `lib/ai/prompts/` - AI instruction files (hard-coded for consistency)
-- `app/knowledge/` - Knowledge Hub pages
-- `components/` - Reusable React components
-- `prisma/` - Database schema
+- `backend/` - FastAPI application
+  - `backend/app/` - Main app package (models, schemas, routes, services)
+  - `backend/app/models.py` - SQLAlchemy database models
+  - `backend/app/schemas.py` - Pydantic request/response schemas
+  - `backend/app/market_data.py` - Market data fetching service
+  - `backend/app/config.py` - App configuration (Pydantic Settings)
+  - `backend/app/database.py` - Database engine and session setup
+- `frontend/` - React Vite application
+  - `frontend/src/components/` - Reusable React components
+  - `frontend/src/pages/` - Page components (Dashboard, Investments, Alerts)
+  - `frontend/src/services/` - API client services
+
+### Asset Types Supported
+- **Gold** — tracked in grams or troy ounces, price per troy ounce in USD
+- **Silver** — tracked in grams or troy ounces, price per troy ounce in USD
+- **Crypto** — BTC, ETH, and various altcoins via CoinGecko
+- **US Stocks** — via yfinance (NYSE, NASDAQ symbols)
+- **EGX Stocks** — Egyptian Exchange stocks via yfinance (e.g., `COMI.CA`)
 
 ### Important Patterns
-- **Hard-coded AI Instructions** - AI prompts are intentionally hard-coded in `lib/ai/prompts/instructions/` for consistency across all consultants
-- **Knowledge Hub Alignment** - Knowledge pages must stay aligned with AI instructions
-- **AI Instructions Page** - `app/knowledge/ai-instructions/page.tsx` displays the coded instructions
+- **Async everything** — Database and HTTP calls use async/await
+- **Price caching** — In-memory cache with 5-min TTL to avoid API rate limits
+- **Dual currency** — All values computed in both USD and EGP using live exchange rate
+- **Weight conversion** — Gold/silver seamlessly convert between grams and troy ounces
 
 ---
 
@@ -166,34 +177,34 @@ The GitHub token is stored in `.claude-token` (gitignored) for security.
 **Usage:** When pushing to GitHub, Claude Code will read the token and configure:
 ```bash
 TOKEN=$(cat .claude-token)
-git remote set-url origin https://${TOKEN}@github.com/islamsaadany/Strategy-Formulation.git
+git remote set-url origin https://${TOKEN}@github.com/islamsaadany/InvestmentApp.git
 ```
 
-### Database Credentials for Local Development
-Database credentials are stored in `.env.local` (gitignored) for security.
+### Database Credentials
+Database credentials are stored in `backend/.env` (gitignored) for security.
 
-**Setup:** Create a `.env.local` file in the project root with your Neon credentials:
+**Setup:** Create a `backend/.env` file with your Neon credentials:
 ```env
-DATABASE_URL=postgresql://neondb_owner:...@ep-silent-forest-....us-east-1.aws.neon.tech/neondb?sslmode=require
-DIRECT_URL=postgresql://neondb_owner:...@ep-silent-forest-....us-east-1.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL=postgresql+asyncpg://neondb_owner:...@ep-xxx.us-east-1.aws.neon.tech/investmentdb?sslmode=require
+DATABASE_URL_SYNC=postgresql://neondb_owner:...@ep-xxx.us-east-1.aws.neon.tech/investmentdb?sslmode=require
 ```
 
 **Get credentials from:**
 - Neon Console: https://console.neon.tech → Your Project → Connection Details
-- Or copy from Vercel: Project Settings → Environment Variables
 
-**Usage:** Claude Code can run database operations:
+### Build & Run Commands
 ```bash
-npx prisma db push      # Sync schema to database
-npx prisma migrate deploy  # Run migrations
-npx prisma studio       # Open database GUI
-```
+# Backend
+cd backend
+pip install -r requirements.txt    # Install dependencies
+uvicorn app.main:app --reload      # Start dev server (port 8000)
+python -m pytest                   # Run tests
 
-### Build Commands
-```bash
-npm run dev          # Start development server
-npm run build        # Full build (requires DB connection)
-npx tsc --noEmit     # TypeScript check only (no DB needed)
+# Frontend
+cd frontend
+npm install                        # Install dependencies
+npm run dev                        # Start dev server (port 5173)
+npm run build                      # Production build
 ```
 
 ---
@@ -201,112 +212,30 @@ npx tsc --noEmit     # TypeScript check only (no DB needed)
 ## Common Tasks
 
 ### UI Version Tracking (MANDATORY)
-When making ANY UI change to a component file:
+When making ANY UI change to a React component file:
 1. **Before editing**, copy the current file to `ui-versions/<component-name>/<YYYY-MM-DD>_<short-description>.tsx`
 2. **After editing**, the new version is the live file — the snapshot in `ui-versions/` is the rollback point
 3. This allows reverting to any previous UI design when sessions lose context
 4. **Folder structure example:**
    ```
    ui-versions/
-     CompetitiveGuidedView/
-       2026-02-13_original-factor-cards.tsx
-       2026-02-13_restored-gap-analysis.tsx
-     CorporateGuidedView/
-       2026-02-13_zone-fix.tsx
+     Dashboard/
+       2026-04-09_initial-layout.tsx
+     InvestmentForm/
+       2026-04-09_original-form.tsx
    ```
 
 ### Before Committing
-1. Run `npx tsc --noEmit` to check for TypeScript errors
-2. Review all changed files
-3. Ensure no sensitive data is being committed
-
-### Bug Fixing Workflow (MANDATORY)
-When fixing bugs from the Testing Log/Bugs tab:
-
-1. **Read bugs** from API: `GET https://ffntstrategycopilot.vercel.app/api/claude/features?type=bugs&key=claude-dev-key-2026`
-2. **Fix the code** - Make necessary changes
-3. **Commit & push** - Standard git workflow
-4. **Resolve bugs via API** - For each bug fixed, call:
-   ```bash
-   curl -X PATCH "https://ffntstrategycopilot.vercel.app/api/claude/features?key=claude-dev-key-2026" \
-     -H "Content-Type: application/json" \
-     -d '{"id": "<bug-id>", "status": "RESOLVED"}'
-   ```
-
-**This triggers the workflow:** Bug resolved → Feature returns to Testing Log for re-testing
-
-**CRITICAL:** Do NOT skip step 4. Bugs must be resolved via API to complete the workflow cycle.
-
-**For standalone bugs (featureId is null):**
-When a bug was created from scratch (not from Testing Log) and has no linked feature:
-1. Fix the bug as normal
-2. **Create a new feature entry** in `INITIAL_FEATURES` array in `app/admin/features-log/tabs/TestingLogTab.tsx`
-3. Resolve the bug via API
-4. The new feature will appear in Testing Log for user to verify
+1. Verify the backend starts without errors
+2. Verify the frontend builds: `npm run build`
+3. Review all changed files
+4. Ensure no sensitive data is being committed (no `.env`, no API keys)
 
 ### Before Merging to Main (MANDATORY)
 1. **Update PROJECT_DETAILS.md** - Document all new features, API endpoints, and significant changes
 2. **Update this CLAUDE.md** - If any new patterns, rules, or workflows were established
 3. **Verify all documentation is current** - Ensures nothing is lost and future sessions have full context
 
-### After Making Changes to AI Instructions
-1. Update the corresponding Knowledge Hub page
-2. Update the AI Instructions display page if needed
-3. Verify alignment across all three locations
-
-### When Modifying the Capabilities Framework
-- Files to keep aligned:
-  - `lib/ai/prompts/instructions/capabilities.ts` (source of truth)
-  - `lib/ai/prompts/strategies/capabilities.ts` (prompt builder)
-  - `app/knowledge/capabilities/page.tsx` (Knowledge Hub)
-  - `app/knowledge/ai-instructions/page.tsx` (display page)
-
-### Periodic Alignment Check (Proactive)
-**When:** Periodically during sessions, especially before merging to main or when user requests.
-
-**Purpose:** Ensure Knowledge Hub pages and AI Instructions page stay synchronized with the source code.
-
-**What to compare:**
-1. **AI Instructions Code** (source of truth) - `lib/ai/prompts/instructions/`
-2. **AI Instructions Page** (display page) - `app/knowledge/ai-instructions/page.tsx`
-3. **Knowledge Hub Pages** - `app/knowledge/*/page.tsx`
-
-**Key Areas to Check:**
-- **Capabilities Framework:**
-  - Fundamental distinction (reactive vs proactive)
-  - Input sources (5), Categories (6), Structure elements (7)
-  - Naming guidelines, Count recommendations, Discipline priorities
-- **Other Strategic Frameworks:**
-  - IFE/EFE scoring criteria, IE Matrix definitions
-  - Competitive strategy factors, Directional strategy categories
-  - Any methodology or framework content
-
-**Process:**
-1. Read the AI Instructions code files
-2. Compare with what's displayed on the AI Instructions page
-3. Compare with what's documented in Knowledge Hub
-4. **Report discrepancies to user** with:
-   - What differs
-   - Where it differs (which files)
-   - Recommendation for alignment
-5. **Wait for user direction** before making changes
-
-**CRITICAL:** Do NOT auto-fix discrepancies. Always align with user first on how to resolve.
-
 ---
 
-## Current Framework Summary
-
-### Capabilities 3-Option Framework
-- **Option 1: Core Capabilities** - REACTIVE (gap-closing enablers)
-- **Option 2: Internal Pillars** - PROACTIVE (transformation initiatives)
-- **Option 3: Cross-Cutting Enablers** - Support layer
-
-### Unified Structure (Both Options)
-- 5 Input Sources
-- 6 Categories
-- 7-Element Structure (Name, Description, Category, Key Measures, Key Tactics, Owner, Rationale)
-
----
-
-*Last Updated: January 2026*
+*Last Updated: April 2026*
