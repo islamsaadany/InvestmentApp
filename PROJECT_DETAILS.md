@@ -202,7 +202,7 @@ InvestmentApp/
         prices/
           batch/route.ts           ← GET batch price lookup
       cron/
-        check-alerts/route.ts     ← GET — Vercel cron: check alerts (every 5 min)
+        check-alerts/route.ts     ← GET — Vercel cron: check alerts (daily, 8 AM UTC)
         snapshot/route.ts          ← GET — Vercel cron: daily snapshot (11 PM)
 
   components/
@@ -274,7 +274,7 @@ For each investment:
 
 ## 8. Price Alerts Mechanism
 
-1. **Vercel Cron Job** hits `GET /api/cron/check-alerts` every 5 minutes (configured in `vercel.json`)
+1. **Vercel Cron Job** hits `GET /api/cron/check-alerts` once daily at 8 AM UTC (configured in `vercel.json`)
 2. Queries all alerts where `isActive = true AND isTriggered = false` via Prisma
 3. Fetches current prices (batching where possible)
 4. If `condition == "above"` and `price >= target`, or `condition == "below"` and `price <= target`:
@@ -363,7 +363,7 @@ Common Egyptian stocks on yfinance (`.CA` suffix for Cairo Exchange):
 - **Platform:** Vercel (recommended — handles both frontend and API routes)
 - **Build:** `npm run build` (Next.js handles everything)
 - **Env vars:** `DATABASE_URL` (Neon connection string)
-- **Cron Jobs:** Defined in `vercel.json` — alert checking (every 5 min) and daily snapshots
+- **Cron Jobs:** Defined in `vercel.json` — alert checking (daily, 8 AM UTC) and daily snapshots (11 PM UTC)
 - **Prisma:** Generated client is bundled at build time; run `npx prisma generate` in build step
 
 ### Database
