@@ -37,8 +37,8 @@
 - **Consider implications** - Think through the downstream effects of any change before implementing
 
 ### 3. Quality Assurance
-- **Always test the build before proceeding** - Run backend: `python -m pytest` and frontend: `npm run build` to verify no errors
-- **Fix errors across the codebase** - Don't leave Python or TypeScript errors unresolved
+- **Always test the build before proceeding** - Run `npm run build` to verify no errors
+- **Fix errors across the codebase** - Don't leave TypeScript errors unresolved
 - **Test implications of changes** - Ensure changes don't break existing functionality
 - **Verify before committing** - Check that all modified files are working correctly
 
@@ -83,9 +83,9 @@ When entering Plan Mode for a feature or significant change, start by asking the
 Then review the change through these 4 lenses **in order**, pausing for user feedback after each:
 
 #### Lens 1: Architecture
-- Component boundaries and responsibility separation
-- Data flow between frontend (React) → API (FastAPI) → Database (Neon PostgreSQL)
-- SQLAlchemy async query patterns (watch for N+1 queries)
+- Component boundaries and responsibility separation (server vs client components)
+- Data flow between React components → Next.js API routes → Prisma → Neon PostgreSQL
+- Prisma query patterns (watch for N+1 queries, use `include`/`select` efficiently)
 - API route design and security (auth, data validation at boundaries)
 
 #### Lens 2: Code Quality
@@ -95,13 +95,13 @@ Then review the change through these 4 lenses **in order**, pausing for user fee
 - Technical debt being introduced or resolved
 
 #### Lens 3: Testing & Verification
-- Does the backend start without errors?
-- Does `npm run build` succeed for the frontend?
+- Does `npm run build` succeed without errors?
+- Do API routes return correct responses?
 - Are there edge cases in the logic that could break silently?
 - For data-driven features: does it handle empty states, nulls, and unexpected input?
 
 #### Lens 4: Performance
-- Database query efficiency (SQLAlchemy eager loading, unnecessary fetches)
+- Database query efficiency (Prisma `select`/`include`, unnecessary fetches)
 - React component re-render concerns (large state objects, missing memoization)
 - API response times (market data caching, batch requests)
 - Caching opportunities (price data TTL, exchange rates)
@@ -132,25 +132,43 @@ Issue 1: Market data API called on every page render
 **Investment Portfolio Tracker** — A web app for tracking investments across multiple asset classes (Gold, Silver, Crypto, US Stocks, Egyptian Stocks) with live market data, P&L tracking, charts, and price alerts. Displays portfolio value in both USD and EGP.
 
 ### Technology Stack
-- **Backend:** Python + FastAPI (async)
-- **Frontend:** React 19 (Vite)
-- **Database:** PostgreSQL (Neon serverless) + SQLAlchemy (async)
+- **Framework:** Next.js 16 (App Router) — full-stack (API routes + React frontend)
+- **Language:** TypeScript
+- **Database:** PostgreSQL (Neon serverless) + Prisma 7 (with `@prisma/adapter-neon`)
 - **Market Data:** yfinance (stocks), CoinGecko (crypto), free metals/forex APIs
 - **Charts:** Recharts
-- **Styling:** CSS / Tailwind (TBD)
+- **Styling:** Tailwind CSS 4
+- **State Management:** TanStack Query (React Query) v5
+- **Forms:** React Hook Form + Zod
+- **Scheduling:** Vercel Cron Jobs (via `vercel.json`)
 
 ### Key Directories
-- `backend/` - FastAPI application
-  - `backend/app/` - Main app package (models, schemas, routes, services)
-  - `backend/app/models.py` - SQLAlchemy database models
-  - `backend/app/schemas.py` - Pydantic request/response schemas
-  - `backend/app/market_data.py` - Market data fetching service
-  - `backend/app/config.py` - App configuration (Pydantic Settings)
-  - `backend/app/database.py` - Database engine and session setup
-- `frontend/` - React Vite application
-  - `frontend/src/components/` - Reusable React components
-  - `frontend/src/pages/` - Page components (Dashboard, Investments, Alerts)
-  - `frontend/src/services/` - API client services
+- `app/` - Next.js App Router (pages + API routes)
+  - `app/page.tsx` - Dashboard page
+  - `app/investments/page.tsx` - Investments page
+  - `app/alerts/page.tsx` - Alerts page
+  - `app/api/` - API route handlers (replaces backend)
+    - `app/api/investments/` - Investment CRUD routes
+    - `app/api/portfolio/` - Portfolio summary, allocation, performance, snapshot routes
+    - `app/api/alerts/` - Alert CRUD routes
+    - `app/api/market/` - Live price & exchange rate routes
+    - `app/api/cron/` - Vercel cron job handlers (check-alerts, snapshot)
+  - `app/generated/prisma/` - Generated Prisma client (auto-generated, do not edit)
+- `components/` - Reusable React components
+  - `components/layout/` - Sidebar, TopBar
+  - `components/dashboard/` - Portfolio cards, charts, top movers
+  - `components/investments/` - Investment table, form, filters
+  - `components/common/` - CurrencyDisplay, ProfitLossIndicator, LoadingSpinner, EmptyState
+  - `components/providers/` - QueryProvider, CurrencyProvider
+- `lib/` - Shared utilities and server-side logic
+  - `lib/db.ts` - Prisma client singleton (Neon serverless adapter)
+  - `lib/market-data.ts` - Market data fetching service
+  - `lib/enrich.ts` - P&L enrichment logic
+  - `lib/formatters.ts` - Currency, date, number formatting
+  - `lib/constants.ts` - Asset type labels, colors, symbol maps
+  - `lib/types.ts` - TypeScript interfaces
+- `prisma/` - Prisma schema and migrations
+  - `prisma/schema.prisma` - Database schema (Investment, PriceAlert, PortfolioSnapshot)
 
 ### Asset Types Supported
 - **Gold** — tracked in grams or troy ounces, price per troy ounce in USD
@@ -160,10 +178,13 @@ Issue 1: Market data API called on every page render
 - **EGX Stocks** — Egyptian Exchange stocks via yfinance (e.g., `COMI.CA`)
 
 ### Important Patterns
-- **Async everything** — Database and HTTP calls use async/await
+- **App Router** — All pages use Next.js App Router (`app/` directory); API routes use `route.ts` handlers
+- **Prisma + Neon** — Database accessed via Prisma client with `@prisma/adapter-neon` for serverless compatibility; singleton pattern in `lib/db.ts`
+- **Server/Client split** — API routes and `lib/` run server-side; components in `components/` are client components (`"use client"`) where interactivity is needed
 - **Price caching** — In-memory cache with 5-min TTL to avoid API rate limits
 - **Dual currency** — All values computed in both USD and EGP using live exchange rate
 - **Weight conversion** — Gold/silver seamlessly convert between grams and troy ounces
+- **Vercel Cron** — Background tasks (alert checking daily at 8 AM UTC, daily snapshots at 11 PM UTC) handled via Vercel Cron Jobs defined in `vercel.json`. Alert frequency limited by Hobby plan — see PROJECT_DETAILS.md for future upgrade plan
 
 ---
 
@@ -181,12 +202,11 @@ git remote set-url origin https://${TOKEN}@github.com/islamsaadany/InvestmentApp
 ```
 
 ### Database Credentials
-Database credentials are stored in `backend/.env` (gitignored) for security.
+Database credentials are stored in `.env` at the project root (gitignored) for security.
 
-**Setup:** Create a `backend/.env` file with your Neon credentials:
+**Setup:** Create a `.env` file in the project root with your Neon credentials:
 ```env
-DATABASE_URL=postgresql+asyncpg://neondb_owner:...@ep-xxx.us-east-1.aws.neon.tech/investmentdb?sslmode=require
-DATABASE_URL_SYNC=postgresql://neondb_owner:...@ep-xxx.us-east-1.aws.neon.tech/investmentdb?sslmode=require
+DATABASE_URL=postgresql://neondb_owner:...@ep-xxx.us-east-1.aws.neon.tech/investmentdb?sslmode=require
 ```
 
 **Get credentials from:**
@@ -194,17 +214,13 @@ DATABASE_URL_SYNC=postgresql://neondb_owner:...@ep-xxx.us-east-1.aws.neon.tech/i
 
 ### Build & Run Commands
 ```bash
-# Backend
-cd backend
-pip install -r requirements.txt    # Install dependencies
-uvicorn app.main:app --reload      # Start dev server (port 8000)
-python -m pytest                   # Run tests
-
-# Frontend
-cd frontend
 npm install                        # Install dependencies
-npm run dev                        # Start dev server (port 5173)
+npx prisma generate                # Generate Prisma client
+npx prisma migrate dev             # Run database migrations (development)
+npm run dev                        # Start Next.js dev server (port 3000)
 npm run build                      # Production build
+npm run start                      # Start production server
+npm run lint                       # Run ESLint
 ```
 
 ---
@@ -226,10 +242,9 @@ When making ANY UI change to a React component file:
    ```
 
 ### Before Committing
-1. Verify the backend starts without errors
-2. Verify the frontend builds: `npm run build`
-3. Review all changed files
-4. Ensure no sensitive data is being committed (no `.env`, no API keys)
+1. Verify the app builds without errors: `npm run build`
+2. Review all changed files
+3. Ensure no sensitive data is being committed (no `.env`, no API keys)
 
 ### Before Merging to Main (MANDATORY)
 1. **Update PROJECT_DETAILS.md** - Document all new features, API endpoints, and significant changes
@@ -238,4 +253,4 @@ When making ANY UI change to a React component file:
 
 ---
 
-*Last Updated: April 2026*
+*Last Updated: April 11, 2026 — Migrated to Next.js 16 + Prisma 7 stack*

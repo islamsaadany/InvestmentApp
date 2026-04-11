@@ -24,17 +24,19 @@
 
 | Layer | Technology | Notes |
 |-------|-----------|-------|
-| **Backend** | Python + FastAPI (async) | REST API with auto-generated Swagger docs |
-| **Frontend** | React 19 + TypeScript (Vite) | SPA with modern tooling |
-| **Database** | PostgreSQL (Neon serverless) | Async via SQLAlchemy + asyncpg |
-| **ORM** | SQLAlchemy 2.0 (async) | Declarative models |
-| **Migrations** | Alembic | Schema versioning |
+| **Framework** | Next.js 16 (App Router) | Full-stack — API routes + React frontend |
+| **Language** | TypeScript | End-to-end type safety |
+| **Runtime** | React 19 | Server & client components |
+| **Database** | PostgreSQL (Neon serverless) | Via `@neondatabase/serverless` driver |
+| **ORM** | Prisma 7 | With `@prisma/adapter-neon` for serverless |
+| **Migrations** | Prisma Migrate | Schema versioning via `prisma/schema.prisma` |
 | **Charts** | Recharts | Pie, Line, Area charts |
 | **State Mgmt** | TanStack Query (React Query) v5 | Server-state caching |
-| **Styling** | Tailwind CSS | Utility-first CSS |
+| **Styling** | Tailwind CSS 4 | Utility-first CSS |
 | **Forms** | React Hook Form + Zod | Validation |
-| **HTTP Client** | Axios (frontend), httpx (backend) | |
-| **Scheduler** | APScheduler | Background alert checking & snapshots |
+| **HTTP Client** | Axios (client-side API calls) | |
+| **Scheduler** | Vercel Cron Jobs | Background alert checking & snapshots via `vercel.json` |
+| **Notifications** | react-hot-toast | Toast notifications |
 | **Icons** | Lucide React | |
 
 ---
@@ -54,209 +56,191 @@
 
 ---
 
-## 4. Database Schema
+## 4. Database Schema (Prisma)
 
-### Table: `investments`
+Schema defined in `prisma/schema.prisma`. Uses `@map()` directives to keep snake_case column names in the database while using camelCase in TypeScript.
 
-| Column | Type | Constraints | Notes |
-|--------|------|-------------|-------|
-| id | INTEGER | PK, auto-increment | |
-| name | VARCHAR(200) | NOT NULL | Human-readable name |
-| symbol | VARCHAR(50) | NOT NULL | Ticker/ID ("BTC", "AAPL", "COMI.CA") |
-| asset_type | ENUM | NOT NULL | gold, silver, crypto, us_stock, egx_stock |
-| quantity | FLOAT | NOT NULL | Amount held |
-| purchase_price | FLOAT | NOT NULL | Price per unit at purchase |
-| purchase_currency | VARCHAR(10) | DEFAULT "USD" | "USD" or "EGP" |
-| purchase_date | TIMESTAMP | NULLABLE | When asset was bought |
-| weight_unit | ENUM | NULLABLE | For gold/silver: "grams" or "ounces" |
-| notes | VARCHAR(500) | NULLABLE | User notes |
-| created_at | TIMESTAMP | server_default=now() | |
-| updated_at | TIMESTAMP | server_default=now() | |
+**Enums:**
+- `AssetType`: `gold`, `silver`, `crypto`, `us_stock`, `egx_stock`
+- `WeightUnit`: `grams`, `ounces`
 
-### Table: `price_alerts`
+### Model: `Investment` → table `investments`
 
-| Column | Type | Constraints | Notes |
-|--------|------|-------------|-------|
-| id | INTEGER | PK | |
-| symbol | VARCHAR(50) | NOT NULL | |
-| asset_type | ENUM | NOT NULL | |
-| target_price | FLOAT | NOT NULL | Price threshold |
-| condition | VARCHAR(10) | NOT NULL | "above" or "below" |
-| currency | VARCHAR(10) | DEFAULT "USD" | Currency of target_price |
-| is_triggered | BOOLEAN | DEFAULT FALSE | |
-| is_active | BOOLEAN | DEFAULT TRUE | |
-| created_at | TIMESTAMP | server_default=now() | |
+| Field | Type | Constraints | DB Column | Notes |
+|-------|------|-------------|-----------|-------|
+| id | Int | PK, autoincrement | id | |
+| name | String | VarChar(200) | name | Human-readable name |
+| symbol | String | VarChar(50) | symbol | Ticker/ID ("BTC", "AAPL", "COMI.CA") |
+| assetType | AssetType | required | asset_type | Indexed |
+| quantity | Float | required | quantity | Amount held |
+| purchasePrice | Float | required | purchase_price | Price per unit at purchase |
+| purchaseCurrency | String | default "USD", VarChar(10) | purchase_currency | "USD" or "EGP" |
+| purchaseDate | DateTime? | optional | purchase_date | When asset was bought |
+| weightUnit | WeightUnit? | optional | weight_unit | For gold/silver: "grams" or "ounces" |
+| notes | String? | VarChar(500) | notes | User notes |
+| createdAt | DateTime | default now() | created_at | |
+| updatedAt | DateTime | @updatedAt | updated_at | Auto-updated by Prisma |
 
-### Table: `portfolio_snapshots`
+### Model: `PriceAlert` → table `price_alerts`
 
-| Column | Type | Constraints | Notes |
-|--------|------|-------------|-------|
-| id | INTEGER | PK | |
-| total_value_usd | FLOAT | NOT NULL | |
-| total_value_egp | FLOAT | NOT NULL | |
-| snapshot_date | TIMESTAMP | server_default=now() | Indexed |
+| Field | Type | Constraints | DB Column | Notes |
+|-------|------|-------------|-----------|-------|
+| id | Int | PK, autoincrement | id | |
+| symbol | String | VarChar(50) | symbol | |
+| assetType | AssetType | required | asset_type | |
+| targetPrice | Float | required | target_price | Price threshold |
+| condition | String | VarChar(10) | condition | "above" or "below" |
+| currency | String | default "USD", VarChar(10) | currency | Currency of target_price |
+| isTriggered | Boolean | default false | is_triggered | |
+| isActive | Boolean | default true | is_active | Indexed (composite with isTriggered) |
+| createdAt | DateTime | default now() | created_at | |
+
+### Model: `PortfolioSnapshot` → table `portfolio_snapshots`
+
+| Field | Type | Constraints | DB Column | Notes |
+|-------|------|-------------|-----------|-------|
+| id | Int | PK, autoincrement | id | |
+| totalValueUsd | Float | required | total_value_usd | |
+| totalValueEgp | Float | required | total_value_egp | |
+| snapshotDate | DateTime | default now() | snapshot_date | Indexed |
 
 ---
 
-## 5. API Endpoints
+## 5. API Endpoints (Next.js API Routes)
 
-### Health
-```
-GET  /                                          → Health check
-```
+All API routes are defined as `route.ts` files under `app/api/`.
 
 ### Investments CRUD
 ```
-POST   /api/investments/                        → Create investment
-GET    /api/investments/                         → List investments (filter: asset_type, skip, limit)
-GET    /api/investments/{id}                     → Get single investment (enriched with live P&L)
-PUT    /api/investments/{id}                     → Update investment
-DELETE /api/investments/{id}                     → Delete investment
+POST   /api/investments                         → Create investment
+GET    /api/investments                         → List investments (filter: asset_type, skip, limit)
+GET    /api/investments/[id]                    → Get single investment (enriched with live P&L)
+PUT    /api/investments/[id]                    → Update investment
+DELETE /api/investments/[id]                    → Delete investment
 ```
 
 ### Portfolio
 ```
 GET    /api/portfolio/summary                   → Full portfolio summary with P&L
-GET    /api/portfolio/allocation                 → Asset allocation breakdown (for pie chart)
-GET    /api/portfolio/performance?period=30d     → Historical snapshots (for line chart)
-POST   /api/portfolio/snapshot                   → Force a portfolio snapshot
+GET    /api/portfolio/allocation                → Asset allocation breakdown (for pie chart)
+GET    /api/portfolio/performance?period=30d    → Historical snapshots (for line chart)
+POST   /api/portfolio/snapshot                  → Force a portfolio snapshot
 ```
 
 ### Price Alerts
 ```
-POST   /api/alerts/                             → Create price alert
-GET    /api/alerts/                             → List alerts (filter: is_active, is_triggered)
-GET    /api/alerts/{id}                         → Get alert with current price
-DELETE /api/alerts/{id}                         → Delete alert
-PUT    /api/alerts/{id}/deactivate              → Deactivate alert
+POST   /api/alerts                              → Create price alert
+GET    /api/alerts                              → List alerts (filter: is_active, is_triggered)
+GET    /api/alerts/[id]                         → Get alert with current price
+DELETE /api/alerts/[id]                         → Delete alert
+PUT    /api/alerts/[id]/deactivate              → Deactivate alert
 ```
 
 ### Market Data
 ```
-GET    /api/market/price/{asset_type}/{symbol}  → Get live price (USD & EGP)
+GET    /api/market/price/[assetType]/[symbol]   → Get live price (USD & EGP)
 GET    /api/market/exchange-rate                → Get USD/EGP rate
 GET    /api/market/prices/batch?symbols=...     → Batch price lookup
 ```
 
+### Cron Jobs (Vercel)
+```
+GET    /api/cron/check-alerts                   → Check & trigger price alerts (daily, 8 AM UTC)
+GET    /api/cron/snapshot                       → Take daily portfolio snapshot (11 PM daily)
+```
+
 ---
 
-## 6. Backend File Structure
+## 6. Project File Structure
 
 ```
-backend/
-  .env.example
-  .env                              (gitignored — Neon credentials)
-  requirements.txt
-  alembic.ini
-  alembic/
-    env.py
-    versions/
-      001_initial_schema.py
+InvestmentApp/
+  .env                              (gitignored — DATABASE_URL for Neon)
+  package.json                      ← Dependencies & scripts
+  next.config.ts                    ← Next.js configuration
+  tsconfig.json                     ← TypeScript configuration
+  postcss.config.mjs                ← PostCSS (Tailwind)
+  eslint.config.mjs                 ← ESLint configuration
+  vercel.json                       ← Vercel cron job definitions
+  prisma.config.ts                  ← Prisma config (datasource URL from env)
+
+  prisma/
+    schema.prisma                   ← Database schema (models, enums, indexes)
+    migrations/                     ← Prisma migration files
+
   app/
-    __init__.py
-    main.py                         ← FastAPI app, CORS, lifespan, router registration
-    config.py                       ← Pydantic settings
-    database.py                     ← Async engine, session, Base, init_db
-    models.py                       ← SQLAlchemy models (Investment, PriceAlert, PortfolioSnapshot)
-    schemas.py                      ← Pydantic request/response schemas
-    market_data.py                  ← Price fetching (CoinGecko, yfinance, metals, forex)
-    dependencies.py                 ← Shared FastAPI dependencies
-    routers/
-      __init__.py
-      investments.py                ← CRUD + enriched portfolio data
-      portfolio.py                  ← Summary, allocation, snapshots
-      alerts.py                     ← Price alert CRUD + status
-      market.py                     ← Live prices, exchange rate
-    services/
-      __init__.py
-      investment_service.py         ← Investment business logic + P&L enrichment
-      portfolio_service.py          ← Aggregation, allocation, snapshots
-      alert_service.py              ← Alert checking logic
-      market_service.py             ← Orchestrates market_data calls
-      scheduler.py                  ← APScheduler background tasks
-```
-
----
-
-## 7. Frontend File Structure
-
-```
-frontend/
-  index.html
-  package.json
-  vite.config.ts
-  tailwind.config.ts
-  .env                              (VITE_API_URL=http://localhost:8000)
-  src/
-    main.tsx                        ← ReactDOM, QueryClientProvider, Router
-    App.tsx                         ← Layout + Routes
-    index.css                       ← Tailwind imports
+    layout.tsx                      ← Root layout (Sidebar, TopBar, providers)
+    globals.css                     ← Tailwind imports & global styles
+    page.tsx                        ← Dashboard page (/)
+    investments/
+      page.tsx                      ← Investments page (/investments)
+    alerts/
+      page.tsx                      ← Alerts page (/alerts)
+    generated/
+      prisma/                       ← Auto-generated Prisma client (do not edit)
 
     api/
-      client.ts                     ← Axios instance with baseURL
-      investments.ts                ← API functions for investments
-      portfolio.ts                  ← API functions for portfolio
-      alerts.ts                     ← API functions for alerts
-      market.ts                     ← API functions for market data
-
-    hooks/
-      useInvestments.ts             ← TanStack Query hooks for investments
-      usePortfolio.ts               ← Hooks for summary, allocation, performance
-      useAlerts.ts                  ← Hooks for alerts
-      useMarketData.ts              ← Hooks for live prices
-      useCurrency.ts                ← Currency preference toggle
-
-    components/
-      layout/
-        AppShell.tsx                ← Sidebar + TopBar + content area
-        Sidebar.tsx                 ← Navigation links
-        TopBar.tsx                  ← Currency toggle, exchange rate, refresh
-
-      dashboard/
-        PortfolioValueCard.tsx      ← Total value + P&L (big number)
-        AllocationPieChart.tsx      ← Recharts PieChart by asset type
-        PerformanceLineChart.tsx    ← Recharts LineChart over time
-        RecentAlerts.tsx            ← Recently triggered alerts
-        TopMovers.tsx               ← Best/worst performing assets
-
       investments/
-        InvestmentTable.tsx         ← Sortable table with live data
-        InvestmentRow.tsx           ← Single row
-        AddInvestmentModal.tsx      ← Modal form for creating
-        EditInvestmentModal.tsx     ← Modal form for editing
-        InvestmentForm.tsx          ← Shared form (dynamic by asset type)
-        AssetTypeFilter.tsx         ← Filter tabs
-
+        route.ts                    ← GET (list) + POST (create)
+        [id]/
+          route.ts                  ← GET + PUT + DELETE by ID
+      portfolio/
+        summary/route.ts           ← GET portfolio summary with P&L
+        allocation/route.ts        ← GET asset allocation breakdown
+        performance/route.ts       ← GET historical snapshots
+        snapshot/route.ts          ← POST force snapshot
       alerts/
-        AlertList.tsx               ← Table of all alerts
-        AddAlertModal.tsx           ← Modal form for creating
-        AlertBadge.tsx              ← Status indicator
+        route.ts                    ← GET (list) + POST (create)
+        [id]/
+          route.ts                  ← GET + DELETE by ID
+          deactivate/route.ts      ← PUT deactivate alert
+      market/
+        price/
+          [assetType]/
+            [symbol]/route.ts      ← GET live price
+        exchange-rate/route.ts     ← GET USD/EGP rate
+        prices/
+          batch/route.ts           ← GET batch price lookup
+      cron/
+        check-alerts/route.ts     ← GET — Vercel cron: check alerts (every 5 min)
+        snapshot/route.ts          ← GET — Vercel cron: daily snapshot (11 PM)
 
-      common/
-        CurrencyDisplay.tsx         ← Renders amount in USD/EGP/both
-        ProfitLossIndicator.tsx     ← Green/Red with arrow + percentage
-        LoadingSpinner.tsx
-        EmptyState.tsx
-        ConfirmDialog.tsx
-        WeightUnitSelect.tsx        ← Grams/Ounces selector
+  components/
+    providers/
+      QueryProvider.tsx             ← TanStack Query client provider
+      CurrencyProvider.tsx          ← Currency preference context (localStorage)
+    layout/
+      Sidebar.tsx                   ← Navigation links
+      TopBar.tsx                    ← Currency toggle, exchange rate, refresh
+    dashboard/
+      PortfolioValueCard.tsx        ← Total value + P&L (big number)
+      AllocationPieChart.tsx        ← Recharts PieChart by asset type
+      PerformanceLineChart.tsx      ← Recharts LineChart over time
+      TopMovers.tsx                 ← Best/worst performing assets
+    investments/
+      InvestmentTable.tsx           ← Sortable table with live data
+      InvestmentForm.tsx            ← Form for create/edit (dynamic by asset type)
+      AssetTypeFilter.tsx           ← Filter tabs
+    common/
+      CurrencyDisplay.tsx           ← Renders amount in USD/EGP/both
+      ProfitLossIndicator.tsx       ← Green/Red with arrow + percentage
+      LoadingSpinner.tsx
+      EmptyState.tsx
 
-    pages/
-      DashboardPage.tsx             ← Composes dashboard widgets
-      InvestmentsPage.tsx           ← Investment list + CRUD
-      AlertsPage.tsx                ← Alert management
+  lib/
+    db.ts                           ← Prisma client singleton (Neon adapter)
+    market-data.ts                  ← Price fetching (CoinGecko, yfinance, metals, forex)
+    enrich.ts                       ← P&L enrichment logic
+    formatters.ts                   ← Currency, date, number formatting
+    constants.ts                    ← Asset type labels, colors, symbol maps
+    types.ts                        ← TypeScript interfaces
 
-    lib/
-      formatters.ts                 ← Currency, date, number formatting
-      constants.ts                  ← Asset type labels, colors, symbol maps
-      types.ts                      ← TypeScript interfaces
-
-    context/
-      CurrencyContext.tsx           ← Global currency preference (localStorage)
+  public/                           ← Static assets (SVGs, favicon)
 ```
 
 ---
 
-## 8. P&L Calculation Logic
+## 7. P&L Calculation Logic
 
 ```
 For each investment:
@@ -288,19 +272,19 @@ For each investment:
 
 ---
 
-## 9. Price Alerts Mechanism
+## 8. Price Alerts Mechanism
 
-1. **APScheduler** runs `check_alerts()` every 5 minutes in the background
-2. Queries all alerts where `is_active = True AND is_triggered = False`
+1. **Vercel Cron Job** hits `GET /api/cron/check-alerts` every 5 minutes (configured in `vercel.json`)
+2. Queries all alerts where `isActive = true AND isTriggered = false` via Prisma
 3. Fetches current prices (batching where possible)
 4. If `condition == "above"` and `price >= target`, or `condition == "below"` and `price <= target`:
-   - Sets `is_triggered = True`
+   - Sets `isTriggered = true`
 5. For alerts with `currency == "EGP"`, converts USD price to EGP before comparing
-6. Frontend polls for triggered alerts every 30 seconds, shows toast notifications
+6. Frontend polls for triggered alerts every 30 seconds, shows toast notifications via `react-hot-toast`
 
 ---
 
-## 10. Charts Specification
+## 9. Charts Specification
 
 ### Allocation Pie Chart
 - **Data:** `GET /api/portfolio/allocation`
@@ -318,7 +302,7 @@ For each investment:
 
 ---
 
-## 11. EGX Stock Symbol Mapping
+## 10. EGX Stock Symbol Mapping
 
 Common Egyptian stocks on yfinance (`.CA` suffix for Cairo Exchange):
 
@@ -336,82 +320,79 @@ Common Egyptian stocks on yfinance (`.CA` suffix for Cairo Exchange):
 
 ---
 
-## 12. Implementation Phases
+## 11. Implementation Phases
 
-### Phase 1: Backend Core
-- [ ] `main.py` — FastAPI app, CORS, lifespan, health check
-- [ ] Alembic setup + initial migration
-- [ ] `services/investment_service.py` — CRUD + P&L enrichment
-- [ ] `routers/investments.py` — Full CRUD endpoints
-- [ ] `routers/market.py` — Live price endpoints
-- [ ] Test via Swagger UI at `/docs`
+### Phase 1: Project Setup & Database
+- [x] Initialize Next.js 16 with App Router + TypeScript
+- [x] Set up Prisma 7 with Neon serverless adapter
+- [x] Define schema (Investment, PriceAlert, PortfolioSnapshot models)
+- [x] Configure Tailwind CSS 4, ESLint
 
-### Phase 2: Portfolio & Alerts Backend
-- [ ] `services/portfolio_service.py` — Summary, allocation, snapshots
-- [ ] `routers/portfolio.py` — Portfolio endpoints
-- [ ] `services/alert_service.py` — Alert checking
-- [ ] `routers/alerts.py` — Alert CRUD
-- [ ] `services/scheduler.py` — Background tasks
-- [ ] Integrate scheduler into `main.py` lifespan
+### Phase 2: API Routes & Core Logic
+- [x] Investment CRUD API routes (`app/api/investments/`)
+- [x] Market data service (`lib/market-data.ts`)
+- [x] P&L enrichment logic (`lib/enrich.ts`)
+- [x] Portfolio API routes (summary, allocation, performance, snapshot)
+- [x] Alert API routes (CRUD + deactivate)
+- [x] Market data API routes (price, exchange rate, batch)
+- [x] Vercel cron routes for alerts & snapshots
 
-### Phase 3: Frontend Setup & Dashboard
-- [ ] Initialize Vite + React + TypeScript project
-- [ ] Install deps (Tailwind, Recharts, TanStack Query, React Router, Axios, etc.)
-- [ ] API client + TypeScript types
-- [ ] App shell (Sidebar, TopBar, routing)
-- [ ] Dashboard: PortfolioValueCard, AllocationPieChart, PerformanceLineChart
+### Phase 3: Frontend — Layout & Dashboard
+- [x] Root layout with Sidebar, TopBar, providers
+- [x] Dashboard page with PortfolioValueCard, AllocationPieChart, PerformanceLineChart, TopMovers
+- [x] CurrencyProvider context (localStorage-backed)
+- [x] QueryProvider (TanStack Query)
 
-### Phase 4: Frontend CRUD & Alerts
-- [ ] InvestmentsPage with table + filters
-- [ ] Add/Edit Investment modals with dynamic forms
-- [ ] AlertsPage with list and create modal
-- [ ] CurrencyDisplay, ProfitLossIndicator components
+### Phase 4: Frontend — CRUD & Alerts
+- [x] Investments page with table, filters, form
+- [x] Alerts page
+- [x] Common components (CurrencyDisplay, ProfitLossIndicator, LoadingSpinner, EmptyState)
 
 ### Phase 5: Polish & Deploy
-- [ ] Loading states, error states, empty states
+- [ ] Loading states, error states, empty states (partially done)
 - [ ] Toast notifications for triggered alerts
 - [ ] Responsive design (mobile-friendly)
-- [ ] Deploy backend (Railway/Render/Fly.io)
-- [ ] Deploy frontend (Vercel)
-- [ ] Run Alembic migration on production Neon DB
+- [ ] Deploy to Vercel (full-stack)
+- [ ] Run Prisma migrations on production Neon DB
 
 ---
 
-## 13. Deployment
+## 12. Deployment
 
-### Backend
-- **Platform:** Railway, Render, or Fly.io
-- **Start command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- **Env vars:** `DATABASE_URL`, `DATABASE_URL_SYNC`, `CORS_ORIGINS`
-
-### Frontend
-- **Platform:** Vercel or Netlify
-- **Build:** `npm run build` → output: `dist/`
-- **Env vars:** `VITE_API_URL` pointing to backend URL
+### Full-Stack (Vercel)
+- **Platform:** Vercel (recommended — handles both frontend and API routes)
+- **Build:** `npm run build` (Next.js handles everything)
+- **Env vars:** `DATABASE_URL` (Neon connection string)
+- **Cron Jobs:** Defined in `vercel.json` — alert checking (every 5 min) and daily snapshots
+- **Prisma:** Generated client is bundled at build time; run `npx prisma generate` in build step
 
 ### Database
 - **Neon PostgreSQL** (serverless, free tier available)
 - **Connection:** Use `?sslmode=require` in connection strings
+- **Driver:** `@neondatabase/serverless` pool with `@prisma/adapter-neon`
 
 ---
 
-## 14. Known Limitations & Future Enhancements
+## 13. Known Limitations & Future Enhancements
 
 **Current Limitations:**
 - EGP P&L uses current exchange rate (not historical rate at purchase)
 - EGX stock coverage on Yahoo Finance is limited to major stocks
 - Price alerts are one-shot (trigger once, then deactivate)
 - Performance chart needs a few days of snapshots to be useful
+- Vercel Cron Jobs require a Vercel deployment (won't run in local dev)
+- Price alert checking runs once daily (8 AM UTC) due to Vercel Hobby plan limits — ideally should run every 5 minutes
 
 **Future Enhancements:**
+- **Frequent price alert checking (every 5 min)** — Requires Vercel Pro plan or an external scheduler to run `/api/cron/check-alerts` at higher frequency
 - WebSocket for real-time price updates
 - Email/Telegram notifications for price alerts
 - CSV import/export of portfolio
 - Multiple portfolios support
 - Historical exchange rate storage for accurate EGP P&L
-- Redis cache for multi-worker deployments
 - Authentication/user accounts
+- Server Components for data-heavy pages (reduce client JS bundle)
 
 ---
 
-*Last Updated: April 2026*
+*Last Updated: April 11, 2026 — Migrated from FastAPI + Vite to Next.js 16 + Prisma 7*
