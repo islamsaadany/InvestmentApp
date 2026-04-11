@@ -9,26 +9,31 @@ const PERIOD_DAYS: Record<string, number> = {
 };
 
 export async function GET(req: NextRequest) {
-  const period = req.nextUrl.searchParams.get("period") || "30d";
+  try {
+    const period = req.nextUrl.searchParams.get("period") || "30d";
 
-  const where: Record<string, any> = {};
-  if (period !== "all" && PERIOD_DAYS[period]) {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - PERIOD_DAYS[period]);
-    where.snapshotDate = { gte: cutoff };
+    const where: Record<string, any> = {};
+    if (period !== "all" && PERIOD_DAYS[period]) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - PERIOD_DAYS[period]);
+      where.snapshotDate = { gte: cutoff };
+    }
+
+    const snapshots = await prisma.portfolioSnapshot.findMany({
+      where,
+      orderBy: { snapshotDate: "asc" },
+    });
+
+    return NextResponse.json(
+      snapshots.map((s) => ({
+        id: s.id,
+        totalValueUsd: s.totalValueUsd,
+        totalValueEgp: s.totalValueEgp,
+        snapshotDate: s.snapshotDate.toISOString(),
+      }))
+    );
+  } catch (error: any) {
+    console.error("GET /api/portfolio/performance error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  const snapshots = await prisma.portfolioSnapshot.findMany({
-    where,
-    orderBy: { snapshotDate: "asc" },
-  });
-
-  return NextResponse.json(
-    snapshots.map((s) => ({
-      id: s.id,
-      totalValueUsd: s.totalValueUsd,
-      totalValueEgp: s.totalValueEgp,
-      snapshotDate: s.snapshotDate.toISOString(),
-    }))
-  );
 }
