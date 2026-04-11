@@ -40,6 +40,8 @@ export async function PUT(
     if (body.purchaseCurrency !== undefined) data.purchaseCurrency = body.purchaseCurrency;
     if (body.purchaseDate !== undefined) data.purchaseDate = body.purchaseDate ? new Date(body.purchaseDate) : null;
     if (body.weightUnit !== undefined) data.weightUnit = body.weightUnit;
+    if (body.valuationMode !== undefined) data.valuationMode = body.valuationMode;
+    if (body.currentValue !== undefined) data.currentValue = body.currentValue;
     if (body.notes !== undefined) data.notes = body.notes;
 
     const investment = await prisma.investment.update({

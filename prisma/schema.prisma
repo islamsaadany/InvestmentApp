@@ -20,6 +20,11 @@ enum WeightUnit {
   ounces
 }
 
+enum ValuationMode {
+  live
+  manual
+}
+
 model Investment {
   id               Int        @id @default(autoincrement())
   name             String     @db.VarChar(200)
@@ -30,6 +35,8 @@ model Investment {
   purchaseCurrency String     @default("USD") @map("purchase_currency") @db.VarChar(10)
   purchaseDate     DateTime?  @map("purchase_date")
   weightUnit       WeightUnit? @map("weight_unit")
+  valuationMode    ValuationMode @default(live) @map("valuation_mode")
+  currentValue     Float?     @map("current_value")
   notes            String?    @db.VarChar(500)
   createdAt        DateTime   @default(now()) @map("created_at")
   updatedAt        DateTime   @updatedAt @map("updated_at")

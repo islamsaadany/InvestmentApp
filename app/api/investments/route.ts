@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
         purchaseCurrency: body.purchaseCurrency || "USD",
         purchaseDate: body.purchaseDate ? new Date(body.purchaseDate) : null,
         weightUnit: body.weightUnit || null,
+        valuationMode: body.valuationMode || "live",
+        currentValue: body.currentValue ?? null,
         notes: body.notes || null,
       },
     });

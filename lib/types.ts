@@ -1,5 +1,6 @@
 export type AssetType = "gold" | "silver" | "crypto" | "us_stock" | "egx_stock";
 export type WeightUnit = "grams" | "ounces";
+export type ValuationMode = "live" | "manual";
 
 export interface InvestmentWithLiveData {
   id: number;
@@ -11,6 +12,8 @@ export interface InvestmentWithLiveData {
   purchaseCurrency: string;
   purchaseDate: string | null;
   weightUnit: WeightUnit | null;
+  valuationMode: ValuationMode;
+  currentValue: number | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;

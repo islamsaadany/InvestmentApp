@@ -53,6 +53,7 @@ const COIN_ID_MAP: Record<string, string> = {
   UNI: "uniswap",
   ATOM: "cosmos",
   LTC: "litecoin",
+  MNT: "mantle",
 };
 
 export async function getCryptoPrice(symbol: string): Promise<number | null> {

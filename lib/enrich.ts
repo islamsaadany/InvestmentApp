@@ -6,41 +6,61 @@ import type { InvestmentWithLiveData, AllocationItem } from "./types";
 export async function enrichInvestment(
   inv: Investment
 ): Promise<InvestmentWithLiveData> {
-  const [currentPrice, egpRate] = await Promise.all([
-    getCurrentPrice(inv.assetType, inv.symbol),
-    getUsdToEgpRate(),
-  ]);
+  const egpRate = await getUsdToEgpRate();
 
+  let currentPrice: number | null = null;
   let currentValueUsd: number | null = null;
   let currentValueEgp: number | null = null;
   let totalCost: number | null = null;
   let profitLoss: number | null = null;
   let profitLossPct: number | null = null;
 
-  if (currentPrice != null) {
-    // Calculate current value
-    if (
-      (inv.assetType === "gold" || inv.assetType === "silver") &&
-      inv.weightUnit === "grams"
-    ) {
-      const qtyOz = inv.quantity / GRAMS_PER_TROY_OUNCE;
-      currentValueUsd = currentPrice * qtyOz;
-    } else {
-      currentValueUsd = currentPrice * inv.quantity;
+  if (inv.valuationMode === "manual") {
+    // Manual valuation (e.g., EGX brokerage portfolio)
+    // currentValue is stored in purchaseCurrency
+    if (inv.currentValue != null) {
+      if (inv.purchaseCurrency === "EGP") {
+        currentValueEgp = inv.currentValue;
+        currentValueUsd = inv.currentValue / egpRate;
+      } else {
+        currentValueUsd = inv.currentValue;
+        currentValueEgp = inv.currentValue * egpRate;
+      }
+
+      totalCost = inv.purchasePrice * inv.quantity;
+      const totalCostUsd =
+        inv.purchaseCurrency === "EGP" ? totalCost / egpRate : totalCost;
+
+      if (totalCostUsd > 0) {
+        profitLoss = currentValueUsd - totalCostUsd;
+        profitLossPct = (profitLoss / totalCostUsd) * 100;
+      }
     }
+  } else {
+    // Live valuation — fetch price from market data
+    currentPrice = await getCurrentPrice(inv.assetType, inv.symbol);
 
-    currentValueEgp = currentValueUsd * egpRate;
+    if (currentPrice != null) {
+      if (
+        (inv.assetType === "gold" || inv.assetType === "silver") &&
+        inv.weightUnit === "grams"
+      ) {
+        const qtyOz = inv.quantity / GRAMS_PER_TROY_OUNCE;
+        currentValueUsd = currentPrice * qtyOz;
+      } else {
+        currentValueUsd = currentPrice * inv.quantity;
+      }
 
-    // Total cost
-    totalCost = inv.purchasePrice * inv.quantity;
+      currentValueEgp = currentValueUsd * egpRate;
 
-    // Convert to USD for P&L comparison
-    const totalCostUsd =
-      inv.purchaseCurrency === "EGP" ? totalCost / egpRate : totalCost;
+      totalCost = inv.purchasePrice * inv.quantity;
+      const totalCostUsd =
+        inv.purchaseCurrency === "EGP" ? totalCost / egpRate : totalCost;
 
-    if (totalCostUsd > 0) {
-      profitLoss = currentValueUsd - totalCostUsd;
-      profitLossPct = (profitLoss / totalCostUsd) * 100;
+      if (totalCostUsd > 0) {
+        profitLoss = currentValueUsd - totalCostUsd;
+        profitLossPct = (profitLoss / totalCostUsd) * 100;
+      }
     }
   }
 
@@ -54,6 +74,8 @@ export async function enrichInvestment(
     purchaseCurrency: inv.purchaseCurrency,
     purchaseDate: inv.purchaseDate?.toISOString() ?? null,
     weightUnit: inv.weightUnit,
+    valuationMode: inv.valuationMode,
+    currentValue: inv.currentValue,
     notes: inv.notes,
     createdAt: inv.createdAt.toISOString(),
     updatedAt: inv.updatedAt.toISOString(),
