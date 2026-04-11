@@ -1,17 +1,10 @@
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import { PrismaNeon } from "@prisma/adapter-neon";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/app/generated/prisma/client";
-import ws from "ws";
-
-// Node.js < 21 has no native WebSocket — provide one for the Neon driver
-neonConfig.webSocketConstructor = ws;
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL;
-  const pool = new Pool({ connectionString });
-  const adapter = new PrismaNeon(pool as any);
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
   return new PrismaClient({ adapter });
 }
 
