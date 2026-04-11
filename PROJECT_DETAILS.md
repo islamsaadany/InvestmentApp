@@ -143,6 +143,12 @@ GET    /api/market/exchange-rate                → Get USD/EGP rate
 GET    /api/market/prices/batch?symbols=...     → Batch price lookup
 ```
 
+### Authentication
+```
+POST   /api/auth/login                          → Login (sets JWT session cookie)
+POST   /api/auth/logout                         → Logout (clears session cookie)
+```
+
 ### Cron Jobs (Vercel)
 ```
 GET    /api/cron/check-alerts                   → Check & trigger price alerts (daily, 8 AM UTC)
@@ -349,10 +355,12 @@ Common Egyptian stocks on yfinance (`.CA` suffix for Cairo Exchange):
 - [x] Common components (CurrencyDisplay, ProfitLossIndicator, LoadingSpinner, EmptyState)
 
 ### Phase 5: Polish & Deploy
+- [x] Custom app icon (blue $ with green arrow SVG favicon)
+- [x] Single-user authentication (JWT + env-based credentials)
 - [ ] Loading states, error states, empty states (partially done)
 - [ ] Toast notifications for triggered alerts
 - [ ] Responsive design (mobile-friendly)
-- [ ] Deploy to Vercel (full-stack)
+- [x] Deploy to Vercel (full-stack)
 - [ ] Run Prisma migrations on production Neon DB
 
 ---
@@ -362,7 +370,7 @@ Common Egyptian stocks on yfinance (`.CA` suffix for Cairo Exchange):
 ### Full-Stack (Vercel)
 - **Platform:** Vercel (recommended — handles both frontend and API routes)
 - **Build:** `npm run build` (Next.js handles everything)
-- **Env vars:** `DATABASE_URL` (Neon connection string)
+- **Env vars:** `DATABASE_URL`, `AUTH_USERNAME`, `AUTH_PASSWORD`, `AUTH_SECRET`
 - **Cron Jobs:** Defined in `vercel.json` — alert checking (daily, 8 AM UTC) and daily snapshots (11 PM UTC)
 - **Prisma:** Generated client is bundled at build time; run `npx prisma generate` in build step
 
@@ -390,7 +398,6 @@ Common Egyptian stocks on yfinance (`.CA` suffix for Cairo Exchange):
 - CSV import/export of portfolio
 - Multiple portfolios support
 - Historical exchange rate storage for accurate EGP P&L
-- Authentication/user accounts
 - Server Components for data-heavy pages (reduce client JS bundle)
 
 ---
