@@ -10,14 +10,14 @@ interface CurrencyContextType {
 }
 
 const CurrencyContext = createContext<CurrencyContextType>({
-  currency: "USD",
+  currency: "EGP",
   setCurrency: () => {},
 });
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [currency, setCurrency] = useState<CurrencyPref>(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem("currency_pref") as CurrencyPref) || "USD";
+      return (localStorage.getItem("currency_pref") as CurrencyPref) || "EGP";
     }
     return "USD";
   });

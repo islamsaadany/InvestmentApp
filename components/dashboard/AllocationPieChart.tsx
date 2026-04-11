@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   PieChart,
   Pie,
@@ -11,6 +10,7 @@ import {
 import type { PieLabelRenderProps } from "recharts";
 import type { AllocationItem, InvestmentWithLiveData } from "@/lib/types";
 import { formatCurrency, formatPercent } from "@/lib/formatters";
+import { useCurrency } from "@/components/providers/CurrencyProvider";
 
 interface AssetSummary {
   label: string;
@@ -64,7 +64,8 @@ export default function AllocationPieChart({
   investments: InvestmentWithLiveData[];
   egpRate: number;
 }) {
-  const [currency, setCurrency] = useState<"USD" | "EGP">("EGP");
+  const { currency: globalCurrency } = useCurrency();
+  const currency = globalCurrency === "USD" ? "USD" : "EGP";
 
   if (allocation.length === 0) {
     return (
@@ -93,31 +94,7 @@ export default function AllocationPieChart({
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-gray-500">Asset Allocation</h3>
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
-          <button
-            onClick={() => setCurrency("EGP")}
-            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-              currency === "EGP"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            EGP
-          </button>
-          <button
-            onClick={() => setCurrency("USD")}
-            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-              currency === "USD"
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            USD
-          </button>
-        </div>
-      </div>
+      <h3 className="text-sm font-medium text-gray-500 mb-4">Asset Allocation</h3>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Pie Chart */}
         <div>

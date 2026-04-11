@@ -58,10 +58,10 @@ export default function TopMovers({
   const sorted = [...aggregated].sort(
     (a, b) => b.profitLossPct - a.profitLossPct
   );
-  const gainers = sorted.filter((i) => i.profitLossPct > 0).slice(0, 3);
+  const gainers = sorted.filter((i) => i.profitLossPct > 0).slice(0, 10);
   const losers = sorted
     .filter((i) => i.profitLossPct < 0)
-    .slice(-3)
+    .slice(-10)
     .reverse();
 
   if (aggregated.length === 0) {
