@@ -184,7 +184,7 @@ Issue 1: Market data API called on every page render
 - **Price caching** — In-memory cache with 5-min TTL to avoid API rate limits
 - **Dual currency** — All values computed in both USD and EGP using live exchange rate
 - **Weight conversion** — Gold/silver seamlessly convert between grams and troy ounces
-- **Vercel Cron** — Background tasks (alert checking every 5 min, daily snapshots) handled via Vercel Cron Jobs defined in `vercel.json`
+- **Vercel Cron** — Background tasks (alert checking daily at 8 AM UTC, daily snapshots at 11 PM UTC) handled via Vercel Cron Jobs defined in `vercel.json`. Alert frequency limited by Hobby plan — see PROJECT_DETAILS.md for future upgrade plan
 
 ---
 

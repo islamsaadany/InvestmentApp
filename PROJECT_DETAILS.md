@@ -145,7 +145,7 @@ GET    /api/market/prices/batch?symbols=...     → Batch price lookup
 
 ### Cron Jobs (Vercel)
 ```
-GET    /api/cron/check-alerts                   → Check & trigger price alerts (every 5 min)
+GET    /api/cron/check-alerts                   → Check & trigger price alerts (daily, 8 AM UTC)
 GET    /api/cron/snapshot                       → Take daily portfolio snapshot (11 PM daily)
 ```
 
@@ -381,8 +381,10 @@ Common Egyptian stocks on yfinance (`.CA` suffix for Cairo Exchange):
 - Price alerts are one-shot (trigger once, then deactivate)
 - Performance chart needs a few days of snapshots to be useful
 - Vercel Cron Jobs require a Vercel deployment (won't run in local dev)
+- Price alert checking runs once daily (8 AM UTC) due to Vercel Hobby plan limits — ideally should run every 5 minutes
 
 **Future Enhancements:**
+- **Frequent price alert checking (every 5 min)** — Requires Vercel Pro plan or an external scheduler to run `/api/cron/check-alerts` at higher frequency
 - WebSocket for real-time price updates
 - Email/Telegram notifications for price alerts
 - CSV import/export of portfolio
