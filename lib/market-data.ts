@@ -56,6 +56,36 @@ const COIN_ID_MAP: Record<string, string> = {
   MNT: "mantle",
 };
 
+export async function getCryptoPriceBatch(symbols: string[]): Promise<void> {
+  // Resolve all symbols to CoinGecko IDs, skip already-cached ones
+  const uncached: { symbol: string; coinId: string }[] = [];
+  for (const symbol of symbols) {
+    const cacheKey = `crypto_${symbol}`;
+    if (getCached(cacheKey) != null) continue;
+    const coinId = COIN_ID_MAP[symbol.toUpperCase()] || symbol.toLowerCase();
+    uncached.push({ symbol, coinId });
+  }
+
+  if (uncached.length === 0) return;
+
+  const coinIds = [...new Set(uncached.map((u) => u.coinId))];
+  try {
+    const res = await fetch(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${coinIds.join(",")}&vs_currencies=usd`,
+      { signal: AbortSignal.timeout(10000) }
+    );
+    const data = await res.json();
+    for (const { symbol, coinId } of uncached) {
+      const price = data[coinId]?.usd;
+      if (price != null) {
+        setCache(`crypto_${symbol}`, price);
+      }
+    }
+  } catch {
+    // Silently fail — individual calls will retry
+  }
+}
+
 export async function getCryptoPrice(symbol: string): Promise<number | null> {
   const cacheKey = `crypto_${symbol}`;
   const cached = getCached(cacheKey);

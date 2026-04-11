@@ -4,20 +4,67 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 import { formatPercent } from "@/lib/formatters";
 import { ASSET_TYPE_LABELS } from "@/lib/constants";
 import type { InvestmentWithLiveData } from "@/lib/types";
+import type { AssetType } from "@/app/generated/prisma/client";
+
+interface AggregatedMover {
+  symbol: string;
+  assetType: AssetType;
+  profitLossPct: number;
+}
+
+function aggregateBySymbol(
+  investments: InvestmentWithLiveData[]
+): AggregatedMover[] {
+  const groups: Record<
+    string,
+    { symbol: string; assetType: AssetType; totalCostUsd: number; totalValueUsd: number }
+  > = {};
+
+  for (const inv of investments) {
+    if (inv.currentValueUsd == null || inv.profitLoss == null) continue;
+
+    const key = `${inv.assetType}:${inv.symbol}`;
+    if (!groups[key]) {
+      groups[key] = {
+        symbol: inv.symbol,
+        assetType: inv.assetType,
+        totalCostUsd: 0,
+        totalValueUsd: 0,
+      };
+    }
+
+    // Derive cost in USD: costUsd = currentValueUsd - profitLoss (both already in USD)
+    const costUsd = inv.currentValueUsd - inv.profitLoss;
+    groups[key].totalCostUsd += costUsd;
+    groups[key].totalValueUsd += inv.currentValueUsd;
+  }
+
+  return Object.values(groups)
+    .filter((g) => g.totalCostUsd > 0)
+    .map((g) => ({
+      symbol: g.symbol,
+      assetType: g.assetType,
+      profitLossPct:
+        ((g.totalValueUsd - g.totalCostUsd) / g.totalCostUsd) * 100,
+    }));
+}
 
 export default function TopMovers({
   investments,
 }: {
   investments: InvestmentWithLiveData[];
 }) {
-  const withPL = investments.filter((i) => i.profitLossPct != null);
-  const sorted = [...withPL].sort(
-    (a, b) => (b.profitLossPct || 0) - (a.profitLossPct || 0)
+  const aggregated = aggregateBySymbol(investments);
+  const sorted = [...aggregated].sort(
+    (a, b) => b.profitLossPct - a.profitLossPct
   );
-  const gainers = sorted.filter((i) => (i.profitLossPct || 0) > 0).slice(0, 3);
-  const losers = sorted.filter((i) => (i.profitLossPct || 0) < 0).slice(-3).reverse();
+  const gainers = sorted.filter((i) => i.profitLossPct > 0).slice(0, 3);
+  const losers = sorted
+    .filter((i) => i.profitLossPct < 0)
+    .slice(-3)
+    .reverse();
 
-  if (withPL.length === 0) {
+  if (aggregated.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h3 className="text-sm font-medium text-gray-500 mb-4">Top Movers</h3>
@@ -41,7 +88,7 @@ export default function TopMovers({
           ) : (
             gainers.map((inv) => (
               <div
-                key={inv.id}
+                key={`${inv.assetType}:${inv.symbol}`}
                 className="flex items-center justify-between py-1.5"
               >
                 <div>
@@ -68,7 +115,7 @@ export default function TopMovers({
           ) : (
             losers.map((inv) => (
               <div
-                key={inv.id}
+                key={`${inv.assetType}:${inv.symbol}`}
                 className="flex items-center justify-between py-1.5"
               >
                 <div>

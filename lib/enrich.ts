@@ -1,5 +1,5 @@
 import type { Investment } from "@/app/generated/prisma/client";
-import { getCurrentPrice, getUsdToEgpRate, GRAMS_PER_TROY_OUNCE } from "./market-data";
+import { getCurrentPrice, getUsdToEgpRate, getCryptoPriceBatch, getMetalPrice, getStockPrice, GRAMS_PER_TROY_OUNCE } from "./market-data";
 import { ASSET_TYPE_LABELS, ASSET_TYPE_COLORS } from "./constants";
 import type { InvestmentWithLiveData, AllocationItem } from "./types";
 
@@ -91,7 +91,48 @@ export async function enrichInvestment(
 export async function enrichInvestments(
   investments: Investment[]
 ): Promise<InvestmentWithLiveData[]> {
+  // Pre-fetch all prices in batch to avoid rate limiting
+  await prefetchPrices(investments);
   return Promise.all(investments.map(enrichInvestment));
+}
+
+async function prefetchPrices(investments: Investment[]): Promise<void> {
+  const cryptoSymbols = new Set<string>();
+  const stockSymbols = new Set<string>();
+  let needGold = false;
+  let needSilver = false;
+
+  for (const inv of investments) {
+    if (inv.valuationMode === "manual") continue;
+    switch (inv.assetType) {
+      case "crypto":
+        cryptoSymbols.add(inv.symbol);
+        break;
+      case "gold":
+        needGold = true;
+        break;
+      case "silver":
+        needSilver = true;
+        break;
+      case "us_stock":
+      case "egx_stock":
+        stockSymbols.add(inv.symbol);
+        break;
+    }
+  }
+
+  const fetches: Promise<unknown>[] = [];
+
+  if (cryptoSymbols.size > 0) {
+    fetches.push(getCryptoPriceBatch([...cryptoSymbols]));
+  }
+  if (needGold) fetches.push(getMetalPrice("gold"));
+  if (needSilver) fetches.push(getMetalPrice("silver"));
+  for (const symbol of stockSymbols) {
+    fetches.push(getStockPrice(symbol));
+  }
+
+  await Promise.all(fetches);
 }
 
 export function computeAllocation(
