@@ -11,7 +11,7 @@ export default function PortfolioValueCard({
 }: {
   summary: PortfolioSummary;
 }) {
-  const { currency } = useCurrency();
+  const { currency, setCurrency } = useCurrency();
   const displayValue =
     currency === "EGP" ? summary.totalValueEgp : summary.totalValueUsd;
   const displayCurrency = currency === "EGP" ? "EGP" : "USD";
@@ -23,9 +23,26 @@ export default function PortfolioValueCard({
           <DollarSign className="w-4 h-4" />
           Portfolio Value
         </div>
-        <span className="text-xs text-gray-400">
-          1 USD = {summary.usdToEgpRate.toFixed(2)} EGP
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-400">
+            1 USD = {summary.usdToEgpRate.toFixed(2)} EGP
+          </span>
+          <div className="flex bg-gray-100 rounded-lg p-0.5">
+            {(["USD", "EGP", "both"] as const).map((c) => (
+              <button
+                key={c}
+                onClick={() => setCurrency(c)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  currency === c
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {c === "both" ? "Both" : c}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
       <div className="mb-2">
         <div className="text-3xl font-bold text-gray-900">
