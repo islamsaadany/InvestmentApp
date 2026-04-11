@@ -2,7 +2,6 @@
 
 import { DollarSign } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
-import { useCurrency } from "@/components/providers/CurrencyProvider";
 import ProfitLossIndicator from "@/components/common/ProfitLossIndicator";
 import type { PortfolioSummary } from "@/lib/types";
 
@@ -11,11 +10,6 @@ export default function PortfolioValueCard({
 }: {
   summary: PortfolioSummary;
 }) {
-  const { currency, setCurrency } = useCurrency();
-  const displayValue =
-    currency === "EGP" ? summary.totalValueEgp : summary.totalValueUsd;
-  const displayCurrency = currency === "EGP" ? "EGP" : "USD";
-
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
@@ -23,36 +17,17 @@ export default function PortfolioValueCard({
           <DollarSign className="w-4 h-4" />
           Portfolio Value
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-400">
-            1 USD = {summary.usdToEgpRate.toFixed(2)} EGP
-          </span>
-          <div className="flex bg-gray-100 rounded-lg p-0.5">
-            {(["USD", "EGP", "both"] as const).map((c) => (
-              <button
-                key={c}
-                onClick={() => setCurrency(c)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  currency === c
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {c === "both" ? "Both" : c}
-              </button>
-            ))}
-          </div>
-        </div>
+        <span className="text-xs text-gray-400">
+          1 USD = {summary.usdToEgpRate.toFixed(2)} EGP
+        </span>
       </div>
       <div className="mb-2">
         <div className="text-3xl font-bold text-gray-900">
-          {formatCurrency(displayValue, displayCurrency)}
+          {formatCurrency(summary.totalValueEgp, "EGP")}
         </div>
-        {currency === "both" && (
-          <div className="text-lg text-gray-500 mt-1">
-            {formatCurrency(summary.totalValueEgp, "EGP")}
-          </div>
-        )}
+        <div className="text-lg text-gray-500 mt-1">
+          {formatCurrency(summary.totalValueUsd, "USD")}
+        </div>
       </div>
       <ProfitLossIndicator
         value={summary.totalProfitLossUsd}
