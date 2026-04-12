@@ -381,7 +381,67 @@ Common Egyptian stocks on yfinance (`.CA` suffix for Cairo Exchange):
 
 ---
 
-## 13. Known Limitations & Future Enhancements
+## 13. Expert Agent (Halal Options Trading Advisor)
+
+**Added:** April 12, 2026
+
+**What it is:** An AI-powered Expert page that provides Halal-compliant US stock options trading recommendations using the HALAL-OPT trading agent framework.
+
+**Features:**
+- Chat-style interface with streaming AI responses (Claude Opus by default)
+- Full Knowledge Base covering options fundamentals, Greeks, IV analysis, 18+ strategies, macro inputs, technical analysis, Halal screening (AAOIFI standards), risk management, and a 9-step decision framework
+- Watchlist management (persisted in DB) — add/remove tickers for the agent to prioritize
+- Portfolio-aware context — toggle to include existing investments in AI analysis
+- Multi-provider support — switch between Anthropic (Claude), Google (Gemini), or OpenAI (GPT) via `.env` config
+- Standardized recommendation output format with trade setup, risk levels, exit conditions
+
+**Files created:**
+- `app/(app)/expert/page.tsx` — Expert page (hybrid: watchlist panel + chat)
+- `app/api/expert/chat/route.ts` — AI chat streaming API route
+- `app/api/expert/watchlist/route.ts` — Watchlist CRUD (GET, POST, DELETE)
+- `components/expert/ChatInterface.tsx` — Chat UI with streaming, portfolio toggle
+- `components/expert/MessageBubble.tsx` — Message display component
+- `components/expert/WatchlistPanel.tsx` — Watchlist sidebar panel
+- `lib/ai-provider.ts` — Multi-provider abstraction (Anthropic/Google/OpenAI)
+- `lib/expert-prompts.ts` — System prompt + KB loader with caching
+- `lib/expert/kb.txt` — Full Halal options trading Knowledge Base
+- `lib/expert/system-prompt.txt` — HALAL-OPT agent system prompt
+
+**Files modified:**
+- `components/layout/Sidebar.tsx` — Added "Expert" nav link with Brain icon
+- `lib/types.ts` — Added `WatchlistItem`, `ChatMessage` types
+- `prisma/schema.prisma` — Added `Watchlist` model
+
+**Database model added:**
+- `Watchlist` (id, symbol, name, addedAt) with unique constraint on symbol
+
+**Dependencies added:**
+- `ai` (Vercel AI SDK core)
+- `@ai-sdk/react` (React hooks)
+- `@ai-sdk/anthropic` (Claude provider)
+- `@ai-sdk/google` (Gemini provider)
+- `@ai-sdk/openai` (OpenAI/GPT provider)
+
+**Environment variables (add to `.env`):**
+```
+AI_PROVIDER=anthropic          # or 'google' or 'openai'
+ANTHROPIC_API_KEY=sk-ant-...   # Required if provider is anthropic
+# GOOGLE_GENERATIVE_AI_API_KEY=...  # Required if provider is google
+# OPENAI_API_KEY=...                # Required if provider is openai
+AI_MODEL=claude-opus-4-20250514    # Optional: override default model
+```
+
+**API Endpoints:**
+```
+POST /api/expert/chat              → Streaming AI chat (sends messages, returns streamed text)
+GET  /api/expert/watchlist         → List watchlist items
+POST /api/expert/watchlist         → Add ticker to watchlist
+DELETE /api/expert/watchlist?symbol=AAPL → Remove from watchlist
+```
+
+---
+
+## 14. Known Limitations & Future Enhancements
 
 **Current Limitations:**
 - EGP P&L uses current exchange rate (not historical rate at purchase)
@@ -402,4 +462,4 @@ Common Egyptian stocks on yfinance (`.CA` suffix for Cairo Exchange):
 
 ---
 
-*Last Updated: April 11, 2026 — Migrated from FastAPI + Vite to Next.js 16 + Prisma 7*
+*Last Updated: April 12, 2026 — Added Expert Agent page (Halal Options Trading Advisor)*

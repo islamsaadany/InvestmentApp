@@ -3,13 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Briefcase, Bell, TrendingUp, LogOut } from "lucide-react";
+import { LayoutDashboard, Briefcase, Bell, TrendingUp, LogOut, Brain } from "lucide-react";
 import axios from "axios";
 
 const links = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/investments", label: "Investments", icon: Briefcase },
   { href: "/alerts", label: "Alerts", icon: Bell },
+  { href: "/expert", label: "Expert", icon: Brain },
 ];
 
 export default function Sidebar() {

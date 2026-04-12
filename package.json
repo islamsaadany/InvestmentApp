@@ -9,6 +9,10 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.69",
+    "@ai-sdk/google": "^3.0.62",
+    "@ai-sdk/openai": "^3.0.52",
+    "@ai-sdk/react": "^3.0.160",
     "@hookform/resolvers": "^5.2.2",
     "@neondatabase/serverless": "^1.0.2",
     "@prisma/adapter-neon": "^7.7.0",
@@ -16,6 +20,7 @@
     "@prisma/adapter-pg-worker": "^6.9.0",
     "@prisma/client": "^7.7.0",
     "@tanstack/react-query": "^5.97.0",
+    "ai": "^6.0.158",
     "axios": "^1.15.0",
     "dotenv": "^17.4.1",
     "jose": "^6.2.2",

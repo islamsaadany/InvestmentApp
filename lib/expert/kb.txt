@@ -1,0 +1,361 @@
+HALAL OPTIONS TRADING — AGENT KNOWLEDGE BASE
+Complete Expert Reference & Decision Framework
+US Market · Shariah-Compliant Stocks Only · All Horizons
+
+SECTION 1: OPTIONS CONTRACTS — COMPLETE FUNDAMENTALS
+
+1.1 What Is an Options Contract?
+An options contract is a financial derivative that gives the buyer the RIGHT, but not the OBLIGATION, to buy or sell an underlying asset (a stock) at a specified price (strike price) on or before a specified date (expiration date). The buyer pays a price for this right, called the PREMIUM. One standard US options contract controls 100 shares of the underlying stock.
+
+1.2 Calls vs. Puts
+CALL Option: Right to BUY shares at the strike price. Buy when you expect the stock to RISE. Profit when stock price rises above strike + premium paid.
+PUT Option: Right to SELL shares at the strike price. Buy when you expect the stock to FALL. Profit when stock price falls below strike - premium paid.
+
+1.3 Key Terminology
+- Strike Price: The pre-agreed price at which the option buyer can buy (call) or sell (put) the underlying stock.
+- Expiration Date: The last date the option can be exercised. After this date, the option expires worthless if not exercised.
+- Premium: The price paid by the buyer to acquire the option. This is the maximum loss for a buyer of a long option.
+- Intrinsic Value: The real, immediate value of the option. For a call: max(0, stock price - strike). For a put: max(0, strike - stock price).
+- Extrinsic/Time Value: Premium above intrinsic value. Represents the probability that the option gains further value before expiration. Decays over time.
+- In-the-Money (ITM): Call is ITM when stock price > strike. Put is ITM when stock price < strike.
+- At-the-Money (ATM): Stock price equals or is very near the strike price. Delta is approximately 0.50.
+- Out-of-the-Money (OTM): Call is OTM when stock price < strike. Put is OTM when stock price > strike. No intrinsic value.
+
+1.4 American vs. European Style
+American Style (US Stocks): Can be exercised any time before expiration. Equity options on US stocks are American style.
+European Style: Can only be exercised at expiration. Index options (like SPX) are typically European.
+
+1.5 Settlement
+Physical Settlement: The actual shares are delivered when the option is exercised. Most stock options settle this way.
+Cash Settlement: The difference in cash is paid instead of shares. Used for index options.
+
+1.6 How to Read an Options Chain
+Key columns: Bid/Ask (spread = liquidity cost), Volume (contracts traded today), Open Interest (outstanding contracts), Implied Volatility, Delta/Gamma/Theta/Vega.
+
+1.7 Early Exercise & Assignment Risk
+American-style options can be exercised at any time. Sellers face assignment risk. Key triggers: deep ITM calls before ex-dividend date, deep ITM puts when interest rate benefit exceeds time value.
+
+SECTION 2: THE GREEKS — COMPLETE REFERENCE
+
+2.1 Delta: Change in option price per $1 move in stock. Calls: 0 to +1. Puts: -1 to 0. Approximates probability of expiring ITM. High conviction = higher delta (0.60-0.80 ITM). Lower conviction = lower delta (0.25-0.40 OTM). Income strategies: 0.15-0.30 delta.
+
+2.2 Gamma: Rate of change of delta per $1 move. Highest for ATM options near expiration. Avoid holding short ATM options near expiration (high gamma risk).
+
+2.3 Theta: Daily time decay. Negative for buyers. Accelerates in final 30 days. Theta is the enemy of buyers and the friend of sellers.
+
+2.4 Vega: Change in price per 1% IV change. Always positive for buyers. Highest for ATM and longer-dated options. Buy when IV is LOW, sell when IV is HIGH.
+
+2.5 Rho: Change per 1% interest rate change. Calls gain when rates rise. Most relevant for LEAPS.
+
+2.6 Greek Interaction Summary
+- Trending market: Watch Delta/Gamma. Buy higher delta options.
+- Rangebound/low vol: Watch Theta/Vega. Sell premium.
+- High IV: Watch Vega. Sell options for mean reversion.
+- Low IV: Watch Vega. Buy options cheaply.
+- Near expiration (<7 days): Watch Gamma/Theta. Beware gamma risk on short options.
+- FOMC/Earnings approaching: Watch Vega/Gamma. IV spikes pre-event.
+
+SECTION 3: IMPLIED VOLATILITY (IV) — DEEP DIVE
+
+3.1 IV is the market's forward-looking expectation of stock movement, expressed as annualized %. IV of 30% = expected ~30% annual move, ~8.7% monthly.
+
+3.2 IV Rank (IVR): Current IV vs 52-week range. IVR > 50 = high IV, favor SELLING. IVR < 30 = low IV, favor BUYING.
+
+3.3 IV Crush: After binary events (earnings, FDA), IV drops sharply. Buying options before earnings often loses money even when stock moves in your direction.
+
+3.4 VIX: CBOE Volatility Index. VIX < 15 = calm. 15-25 = normal. > 30 = elevated fear. > 40 = extreme panic.
+
+3.5 IV Mean Reversion: High IV periods are followed by contraction; low IV by expansion. Selling premium in high-IV environments is historically profitable.
+
+SECTION 4: ALL OPTIONS STRATEGIES
+
+4.1 Long Call: Buy a call. Bullish. Max profit unlimited. Max loss = premium. Best when IV is low, strong bullish conviction.
+
+4.2 Long Put: Buy a put. Bearish. Max profit = strike - premium. Max loss = premium. Best when IV is low, bearish conviction.
+
+4.3 Covered Call: Own 100 shares + sell a call. Neutral to mildly bullish. Max profit = (strike - purchase price) + premium. Excellent Halal strategy.
+
+4.4 Cash-Secured Put (CSP): Sell a put with cash to cover assignment. Neutral to bullish. Max profit = premium. Very Halal-friendly — no leverage, intent is ownership.
+
+4.5 Protective Put: Own 100 shares + buy a put. Insurance against decline. Halal-friendly hedging.
+
+4.6 Bull Call Spread: Buy lower-strike call + sell higher-strike call. Moderately bullish. Defined risk.
+
+4.7 Bear Put Spread: Buy higher-strike put + sell lower-strike put. Moderately bearish. Defined risk.
+
+4.8 Bull Put Spread (Credit): Sell higher-strike put + buy lower-strike put. Neutral to bullish. Profits if stock stays above sold strike.
+
+4.9 Bear Call Spread (Credit): Sell lower-strike call + buy higher-strike call. Neutral to bearish. Profits if stock stays below sold strike.
+
+4.10 Iron Condor: Sell OTM put spread + sell OTM call spread. Neutral. Max profit = total credit. Best when IVR > 50%, 30-45 DTE. Fully defined risk. Recommended strategy.
+
+4.11 Iron Butterfly: Sell ATM call + ATM put, buy OTM wings. Very neutral. Higher credit, narrower profit zone vs iron condor.
+
+4.12 Long Straddle: Buy ATM call + ATM put. Expects large move either direction. Best when IV is LOW.
+
+4.13 Long Strangle: Buy OTM call + OTM put. Cheaper than straddle, requires larger move.
+
+4.14 Calendar Spread: Sell near-term option + buy longer-dated at same strike. Profits from time decay differential.
+
+4.15 Diagonal Spread: Different strikes + different expirations. Common: Poor Man's Covered Call (deep ITM LEAPS + sell OTM calls).
+
+4.16 LEAPS: Options with 1+ year expiration. Leveraged stock ownership with defined risk. Higher rho sensitivity.
+
+4.17 Collar: Own stock + buy put + sell call. Net zero or low cost hedge.
+
+4.18 Strategy Selection Quick Guide:
+- Strongly Bullish + Low IV → Long Call or Bull Call Spread
+- Moderately Bullish + High IV → CSP or Bull Put Spread
+- Neutral (own stock) + High IV → Covered Call
+- Neutral (no stock) + High IV → Iron Condor
+- Neutral tight range + High IV → Iron Butterfly
+- Strongly Bearish + Low IV → Long Put or Bear Put Spread
+- Big move expected + Low IV → Long Straddle or Strangle
+- Long-term bullish → LEAPS Call
+- Protect position → Protective Put or Collar
+
+SECTION 5: MACRO-ECONOMIC INPUTS & THEIR IMPACT
+
+5.1 Federal Reserve & Interest Rates (FOMC)
+Rate hikes increase call premiums (via rho) and decrease put premiums. Hikes signal economic cooling, bearish for growth stocks. Rate cuts are bullish. FOMC meetings cause IV spikes before announcement, IV collapses after. Before FOMC: reduce directional exposure. After FOMC: look for IV contraction plays.
+
+5.2 Inflation Data (CPI, PCE)
+Higher-than-expected CPI = bearish (signals more rate hikes), causes IV spike. Lower CPI = bullish. Check release calendar. Avoid new large positions 48 hours before release.
+
+5.3 Employment Data (NFP, Unemployment)
+Non-Farm Payrolls released first Friday of each month. Strong jobs = bullish but may signal rate hikes. Weak jobs = bearish or sometimes bullish (Fed will cut). NFP surprises cause measurable VIX shifts.
+
+5.4 GDP Growth/Contraction
+Above expectations = broadly bullish. Two consecutive negative quarters = technical recession, very bearish.
+
+5.5 US Dollar Index (DXY)
+Strong dollar = bearish for multinationals. Weak dollar = tailwind for exports and commodities. When DXY rising, prefer domestic-focused Halal companies.
+
+5.6 Treasury Yield Curve
+Normal: long > short rates. Inverted (2y/10y): precedes recession 12-18 months. MOVE Index = VIX of bonds.
+
+5.7 Geopolitical Events
+Wars, sanctions, elections cause IV spikes. Reduce position size, widen spreads, prefer defined-risk. Energy sector Halal stocks may benefit.
+
+5.8 Commodity Prices
+Rising oil benefits energy sector. Gold rises during fear, dollar weakness, inflation.
+
+5.9 Earnings Season Calendar
+Four seasons: January, April, July, October. IV spikes before earnings, collapses after. Avoid buying premium 2 days before earnings. Consider post-earnings iron condors.
+
+5.10 Market Sentiment Indicators
+VIX < 15: Caution, corrections begin in low-VIX. VIX 15-25: Normal. VIX > 30: Opportunity to sell premium. VIX > 40: Extreme, only defined-risk.
+Put/Call Ratio > 1.0: Bearish sentiment, contrarian buy. Put/Call < 0.7: Bullish/complacent, potential top.
+CNN Fear & Greed < 25: Extreme Fear, good time to buy quality. > 75: Extreme Greed, reduce risk.
+
+5.11 Global Central Bank Spillover
+ECB rate changes affect global dollar flows. BOJ yen carry trade unwind causes sudden equity sell-offs. During BOJ policy changes, reduce size and widen condor wings.
+
+SECTION 6: TECHNICAL ANALYSIS FOR OPTIONS DECISIONS
+
+6.1 Support & Resistance: Critical for strike selection. Sell put spreads at/below support; sell call spreads at/above resistance.
+
+6.2 Moving Averages
+20-day EMA: Short-term trend. 50-day SMA: Medium-term, primary for swing traders. 200-day SMA: Long-term. Death cross (50 below 200) = bearish. Golden cross = bullish. Above all three with upward slope = bullish bias.
+
+6.3 RSI (Relative Strength Index)
+0-100. RSI > 70 = overbought (avoid new calls, consider bearish spreads). RSI < 30 = oversold (avoid new puts, consider bullish CSPs).
+
+6.4 MACD
+Bullish: MACD crosses above signal from below. Bearish: crosses below. Divergence: stock new high but MACD doesn't = weakening.
+
+6.5 Bollinger Bands
+20-day MA +/- 2 std dev. Squeeze (narrow bands) = low vol, breakout coming. Squeeze + low IV = excellent straddle setup.
+
+6.6 Volume Analysis
+Unusual options volume exceeding open interest = institutional activity. High call volume = smart money buying upside. Screen for unusual activity.
+
+6.7 Chart Patterns
+Ascending Triangle → Bull call spread or long call
+Descending Triangle → Bear put spread or long put
+Head & Shoulders → Bear put spread
+Double Bottom → Bull call spread or CSP
+Bull Flag → Long call or bull call spread
+Volatility Squeeze → Long straddle/strangle
+
+SECTION 7: HALAL (SHARIAH-COMPLIANT) STOCK SCREENING
+
+CRITICAL: All recommendations must pass Halal screening before any analysis begins.
+
+7.1 Halal Stock Requirements
+Primary business activities permissible under Islamic law. Financial structure does not involve excessive interest-based debt or earnings.
+
+7.2 Absolutely Prohibited Sectors (Haram)
+Conventional banking/insurance, alcohol, tobacco, gambling/casinos, pork, adult entertainment, conventional weapons, pure speculation.
+
+7.3 Financial Ratio Screening (AAOIFI Standards)
+- Total debt / Total assets < 30%
+- Interest income / Total revenue < 5%
+- Haram revenue / Total revenue < 5%
+- Accounts receivable / Total assets < 70%
+
+7.4 Purification of Income
+If Halal stock has small % haram revenue (up to 5%), investors donate that % of dividend income to charity. Flag stocks requiring purification.
+
+7.5 Halal Screening Bodies
+AAOIFI (gold standard), S&P 500 Shariah Index, MSCI USA Islamic Index, Dow Jones Islamic Market Index. Screening Apps: Zoya Finance, Musaffa.
+
+7.6 Well-Known Halal US Stocks (Verify Before Trading)
+Technology: AAPL, MSFT, NVDA, GOOGL, META
+Healthcare: JNJ, LLY, UNH, PFE
+Consumer Staples: PG, KO, PEP, COST
+Energy: XOM, CVX, COP
+Industrials: HON, CAT, BA (verify weapons exposure)
+Consumer Discretionary: AMZN, TSLA, HD
+IMPORTANT: Compliance changes quarterly. Always verify with Zoya/Musaffa.
+
+7.7 Is Options Trading Halal? — Scholarly Debate
+Conservative view: Problematic due to gharar (uncertainty), maysir (gambling). Permissive view: Acceptable when underlying is Halal, defined risk, intent is risk management. Agent focuses on Halal stocks, defined-risk strategies, no naked options.
+
+7.8 Halal Watchlist Management
+Start with SPUS ETF holdings. Verify via Zoya/Musaffa. Re-verify quarterly. Flag purification % > 3%.
+
+SECTION 8: RISK MANAGEMENT FRAMEWORK
+
+8.1 Position Sizing Rules
+- Max per trade: Never risk more than 2-3% of total portfolio (measured by max loss)
+- Max per sector: No more than 15% exposed to one sector
+- Max concurrent trades: No more than 10 open options positions
+- Defined risk only: Every strategy must have known max loss at entry
+
+8.2 Risk Level Classification
+LOW: Defined risk, high probability, neutral. Covered calls, CSPs, Iron Condors, Bull Put Spreads. 5% max loss per trade.
+MEDIUM: Defined risk, directional, moderate IV. Bull/Bear spreads, LEAPS, Collars, Calendars. 3% max loss per trade.
+HIGH: Defined risk, lower probability. Long calls/puts, straddles, strangles, OTM LEAPS. 2% max loss per trade.
+SPECULATIVE: High cost, low probability, binary outcome. Far OTM options, pre-earnings buys. 1% max loss per trade.
+
+8.3 Stop-Loss Guidelines
+Credit Spreads/Iron Condors: Close if loss reaches 2x credit received.
+Long Options: Close if option loses 50% of premium, or underlying violates key technical level.
+LEAPS: Use 200-day SMA break as trigger.
+Time-Based: Close or roll at 21 DTE regardless.
+
+8.4 Profit-Taking Rules
+Credit Spreads/Iron Condors: Take profit at 50-75% of max credit.
+Long Calls/Puts: Scale out at 50% profit on half, let other half run.
+LEAPS: Hold until thesis achieved or major technical breakdown.
+
+8.5 Rolling Positions
+Rolling Out: Move expiration later, collect additional credit.
+Rolling Down/Up: Adjust strike toward threat.
+Do NOT roll if original thesis has broken down completely.
+
+8.6 Portfolio Greek Monitoring
+Net Delta: Keep within +/-0.20 per $10,000 portfolio.
+Net Vega: Be mindful of total exposure.
+Net Theta: Aim for net positive theta overall.
+
+SECTION 9: AGENT DECISION-MAKING FRAMEWORK
+
+Execute ALL steps in order before producing output.
+
+STEP 1: Halal Screening Check
+Verify on recognized Halal index. Cross-check on Zoya/Musaffa. Confirm sector not prohibited. Confirm AAOIFI ratios. IF FAILS: Stop. Flag as haram. IF PASSES: Note purification %, proceed.
+
+STEP 2: Macro Environment Assessment
+Check VIX level/trend. Review Fed stance. Check yield curve. Review DXY. Classify: RISK-ON / RISK-OFF / NEUTRAL. Note upcoming events in next 14 days.
+
+STEP 3: Sector Analysis
+Identify sector. Check sector ETF vs S&P 500 over 20 days. Note sector-specific headwinds/tailwinds.
+
+STEP 4: Individual Stock Fundamental Check
+Recent earnings (beat/miss). Upcoming earnings date (flag if within 30 days). Debt levels (still Halal?). Recent news/upgrades/downgrades.
+
+STEP 5: Technical Analysis Signal Reading
+Position vs 20/50/200-day MAs. RSI level. MACD crossovers. Bollinger Bands status. Key support/resistance levels. Chart patterns. Classify: BULLISH / BEARISH / NEUTRAL.
+
+STEP 6: Implied Volatility Assessment
+Current IVR. IV trend. Earnings-related IV elevation. Classify: LOW / HIGH.
+
+STEP 7: Strategy Selection Logic
+Bullish + Risk-On + Low IV → Long Call or Bull Call Spread
+Bullish + Risk-On + High IV → CSP or Bull Put Credit Spread
+Bullish + Neutral + High IV → Covered Call or CSP
+Neutral + Any + High IV → Iron Condor
+Neutral + Any + Low IV → Long Straddle (if catalyst) or wait
+Bearish + Risk-Off + Low IV → Long Put or Bear Put Spread
+Bearish + Risk-Off + High IV → Bear Call Credit Spread
+Strong Conviction + Any + Low IV → LEAPS
+Pre-Event + Low IV → Long Straddle/Strangle
+Post-Event + High IV → Iron Condor or credit spread
+
+STEP 8: Strike & Expiration Selection
+Short-term (1-14 days): Only for defined-risk spreads.
+Medium-term (21-45 DTE): Sweet spot for income strategies.
+Long-term (60-120 DTE): Best for directional plays and LEAPS.
+Income strategies: Sell short strike at 0.15-0.25 delta, long wing 3-5 strikes further OTM.
+Directional: High conviction 0.60-0.70 delta, moderate 0.40-0.50, speculative 0.20-0.30.
+
+STEP 9: Risk Classification & Position Sizing
+Assign risk level. Calculate max loss in dollars. Ensure within portfolio limit. Calculate contract count. Confirm no earnings within 14 days. Check portfolio Greeks remain balanced.
+
+SECTION 10: STANDARDIZED RECOMMENDATION OUTPUT FORMAT
+
+Every recommendation MUST use this format:
+
+=== TRADE RECOMMENDATION ===
+STOCK: [Ticker] — [Company Name]
+HALAL STATUS: Confirmed Halal [Source — Date Verified]
+PURIFICATION REQUIRED: Yes [X%] / No
+STRATEGY: [e.g., Bull Call Spread / Iron Condor / Long Call]
+DIRECTION: BULLISH / BEARISH / NEUTRAL
+HORIZON: Short-term [X days] / Medium [X weeks] / Long [X months]
+RISK LEVEL: LOW / MEDIUM / HIGH / SPECULATIVE
+
+TRADE SETUP:
+  Leg 1: [BUY/SELL] [#] [Ticker] [Expiration Date] [$Strike] [Call/Put]
+  Leg 2: [BUY/SELL] [#] [Ticker] [Exp] [$Strike] [Call/Put]
+  Net Premium: $X.XX [Debit / Credit] per contract
+  Total Capital Required: $X,XXX
+
+MAX PROFIT: $X,XXX ([condition])
+MAX LOSS: $X,XXX ([condition])
+BREAKEVEN: $XX.XX
+PROBABILITY OF PROFIT: ~XX%
+
+RATIONALE:
+  Macro: [1-2 sentences]
+  Technical: [Key signals]
+  Volatility: [IVR, IV trend]
+
+EXIT CONDITIONS:
+  Take Profit: [target]
+  Stop Loss: [level]
+  Time Stop: Review at 21 DTE
+
+KEY RISKS:
+  1. [Specific risk]
+  2. [Technical invalidation]
+  3. [Volatility risk]
+
+UPCOMING EVENTS: [Within 30 days]
+=== END OF RECOMMENDATION ===
+
+SECTION 11: PRE-TRADE CHECKLIST
+
+The agent must confirm ALL before recommending:
+- Halal compliance verified (date + source)
+- Macro environment assessed (VIX, Fed, yield curve, DXY)
+- Sector trend identified
+- Technical bias determined
+- IV Rank noted and strategy aligned
+- Earnings date checked (no earnings within 14 days OR adjusted)
+- Strike selection based on support/resistance
+- Max loss calculated and within portfolio limit
+- Exit conditions defined before entry
+- Upcoming macro events noted (FOMC, CPI, NFP within 30 days)
+
+VIX Quick Guide:
+< 12: Extreme complacency. Be cautious, reduce size.
+12-18: Low fear, bull market. Favor buying premium.
+18-25: Normal. Standard conditions.
+25-35: Elevated fear. Favor defined-risk selling. Widen strikes.
+35-50: High fear. Sell premium if thesis intact. Defined risk only.
+> 50: Panic. Extreme caution. Smallest positions only.
+
+DISCLAIMER: This is an educational reference tool, NOT financial advice. Options trading involves significant risk. Halal compliance should be independently verified. Consult a qualified financial advisor and Islamic scholar before trading.

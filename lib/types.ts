@@ -63,3 +63,18 @@ export interface PriceAlertData {
   createdAt: string;
   currentPrice: number | null;
 }
+
+// Expert Agent types
+export interface WatchlistItem {
+  id: number;
+  symbol: string;
+  name: string | null;
+  addedAt: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+}

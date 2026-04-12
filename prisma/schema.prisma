@@ -69,3 +69,13 @@ model PortfolioSnapshot {
   @@index([snapshotDate])
   @@map("portfolio_snapshots")
 }
+
+model Watchlist {
+  id      Int      @id @default(autoincrement())
+  symbol  String   @db.VarChar(20)
+  name    String?  @db.VarChar(200)
+  addedAt DateTime @default(now()) @map("added_at")
+
+  @@unique([symbol])
+  @@map("watchlist")
+}
