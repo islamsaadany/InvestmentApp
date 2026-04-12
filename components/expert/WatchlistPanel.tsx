@@ -2,20 +2,12 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, X, Eye, Loader2, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Plus, X, Eye, Loader2 } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import type { WatchlistItem } from "@/lib/types";
 
-interface WatchlistPanelProps {
-  collapsed: boolean;
-  onToggleCollapse: () => void;
-}
-
-export default function WatchlistPanel({
-  collapsed,
-  onToggleCollapse,
-}: WatchlistPanelProps) {
+export default function WatchlistPanel() {
   const queryClient = useQueryClient();
   const [symbol, setSymbol] = useState("");
   const [name, setName] = useState("");
@@ -58,40 +50,12 @@ export default function WatchlistPanel({
     addMutation.mutate({ symbol: trimmed, name: name.trim() });
   };
 
-  // Collapsed state — narrow icon strip
-  if (collapsed) {
-    return (
-      <div className="w-12 bg-slate-900 border-r border-slate-700 flex flex-col items-center py-4 h-full">
-        <Eye className="w-5 h-5 text-slate-400 mb-4" />
-        <div className="flex-1 flex flex-col items-center gap-2 overflow-y-auto">
-          {watchlist.map((item) => (
-            <div
-              key={item.id}
-              className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-xs font-bold text-blue-300"
-              title={item.name ? `${item.symbol} — ${item.name}` : item.symbol}
-            >
-              {item.symbol.slice(0, 2)}
-            </div>
-          ))}
-        </div>
-        <button
-          onClick={onToggleCollapse}
-          className="mt-4 p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          title="Expand watchlist"
-        >
-          <PanelLeftOpen className="w-4 h-4" />
-        </button>
-      </div>
-    );
-  }
-
-  // Expanded state
   return (
-    <div className="w-64 bg-slate-900 border-r border-slate-700 flex flex-col h-full">
-      <div className="p-4 border-b border-slate-700">
+    <div className="w-64 border-r border-gray-200 bg-gray-50 flex flex-col h-full">
+      <div className="p-4 border-b border-gray-200">
         <div className="flex items-center gap-2 mb-3">
-          <Eye className="w-4 h-4 text-blue-400" />
-          <h3 className="text-sm font-semibold text-white">Watchlist</h3>
+          <Eye className="w-4 h-4 text-blue-600" />
+          <h3 className="text-sm font-semibold text-gray-900">Watchlist</h3>
         </div>
         <form onSubmit={handleAdd} className="space-y-2">
           <input
@@ -99,19 +63,19 @@ export default function WatchlistPanel({
             value={symbol}
             onChange={(e) => setSymbol(e.target.value)}
             placeholder="Ticker (e.g. AAPL)"
-            className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Name (optional)"
-            className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
           <button
             type="submit"
             disabled={!symbol.trim() || addMutation.isPending}
-            className="w-full flex items-center justify-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-500 transition-colors disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
             {addMutation.isPending ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -126,10 +90,10 @@ export default function WatchlistPanel({
       <div className="flex-1 overflow-y-auto p-2">
         {isLoading ? (
           <div className="flex justify-center py-4">
-            <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
           </div>
         ) : watchlist.length === 0 ? (
-          <p className="text-xs text-slate-500 text-center py-4 px-2">
+          <p className="text-xs text-gray-400 text-center py-4 px-2">
             Add stocks to your watchlist for the agent to prioritize
           </p>
         ) : (
@@ -137,14 +101,14 @@ export default function WatchlistPanel({
             {watchlist.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between bg-slate-800 rounded-lg px-3 py-2 border border-slate-700 group"
+                className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-gray-200 group"
               >
                 <div className="min-w-0">
-                  <span className="text-sm font-semibold text-blue-300">
+                  <span className="text-sm font-semibold text-gray-900">
                     {item.symbol}
                   </span>
                   {item.name && (
-                    <p className="text-xs text-slate-400 truncate">
+                    <p className="text-xs text-gray-500 truncate">
                       {item.name}
                     </p>
                   )}
@@ -152,7 +116,7 @@ export default function WatchlistPanel({
                 <button
                   onClick={() => removeMutation.mutate(item.symbol)}
                   disabled={removeMutation.isPending}
-                  className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-slate-700 text-slate-500 hover:text-red-400 transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -160,16 +124,6 @@ export default function WatchlistPanel({
             ))}
           </div>
         )}
-      </div>
-
-      <div className="border-t border-slate-700 p-2">
-        <button
-          onClick={onToggleCollapse}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-        >
-          <PanelLeftClose className="w-4 h-4" />
-          Collapse
-        </button>
       </div>
     </div>
   );

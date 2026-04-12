@@ -3,7 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Briefcase, Bell, TrendingUp, LogOut, Brain } from "lucide-react";
+import {
+  LayoutDashboard,
+  Briefcase,
+  Bell,
+  TrendingUp,
+  LogOut,
+  Brain,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import axios from "axios";
 
 const links = [
@@ -17,6 +26,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -30,11 +40,24 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 min-h-screen p-4 flex flex-col">
-      <div className="flex items-center gap-2 mb-8 px-2">
-        <TrendingUp className="w-7 h-7 text-blue-600" />
-        <h1 className="text-xl font-bold text-gray-900">InvestTracker</h1>
+    <aside
+      className={`${
+        collapsed ? "w-16" : "w-64"
+      } bg-slate-900 min-h-screen p-3 flex flex-col transition-all duration-200`}
+    >
+      {/* Logo */}
+      <div
+        className={`flex items-center gap-2 mb-8 ${
+          collapsed ? "justify-center px-0" : "px-2"
+        }`}
+      >
+        <TrendingUp className="w-7 h-7 text-blue-400 flex-shrink-0" />
+        {!collapsed && (
+          <h1 className="text-xl font-bold text-white">InvestTracker</h1>
+        )}
       </div>
+
+      {/* Nav links */}
       <nav className="flex flex-col gap-1 flex-1">
         {links.map(({ href, label, icon: Icon }) => {
           const isActive =
@@ -43,26 +66,55 @@ export default function Sidebar() {
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              title={collapsed ? label : undefined}
+              className={`flex items-center gap-3 ${
+                collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2.5"
+              } rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  ? "bg-blue-600/20 text-blue-400"
+                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
               }`}
             >
-              <Icon className="w-5 h-5" />
-              {label}
+              <Icon className="w-5 h-5 flex-shrink-0" />
+              {!collapsed && label}
             </Link>
           );
         })}
       </nav>
-      <button
-        onClick={handleLogout}
-        disabled={loggingOut}
-        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50 mt-4 border-t border-gray-100 pt-4"
-      >
-        <LogOut className="w-5 h-5" />
-        {loggingOut ? "Signing out..." : "Sign Out"}
-      </button>
+
+      {/* Bottom section */}
+      <div className="flex flex-col gap-1 border-t border-slate-700 pt-3 mt-3">
+        {/* Collapse toggle */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className={`flex items-center gap-3 ${
+            collapsed ? "justify-center px-0" : "px-3"
+          } py-2.5 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-800 hover:text-white transition-colors`}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? (
+            <PanelLeftOpen className="w-5 h-5 flex-shrink-0" />
+          ) : (
+            <>
+              <PanelLeftClose className="w-5 h-5 flex-shrink-0" />
+              Collapse
+            </>
+          )}
+        </button>
+
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          disabled={loggingOut}
+          title={collapsed ? "Sign Out" : undefined}
+          className={`flex items-center gap-3 ${
+            collapsed ? "justify-center px-0" : "px-3"
+          } py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-colors disabled:opacity-50`}
+        >
+          <LogOut className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && (loggingOut ? "Signing out..." : "Sign Out")}
+        </button>
+      </div>
     </aside>
   );
 }
