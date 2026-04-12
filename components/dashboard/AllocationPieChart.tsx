@@ -55,6 +55,9 @@ function computeAssetSummaries(
   });
 }
 
+type SortKey = "label" | "percentage" | "value" | "profitLossPct";
+type SortDir = "asc" | "desc";
+
 export default function AllocationPieChart({
   allocation,
   investments,
@@ -65,6 +68,20 @@ export default function AllocationPieChart({
   egpRate: number;
 }) {
   const [currency, setCurrency] = useState<"USD" | "EGP">("EGP");
+  const [sortKey, setSortKey] = useState<SortKey>("percentage");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir("desc");
+    }
+  };
+
+  const sortIndicator = (key: SortKey) =>
+    sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : "";
 
   if (allocation.length === 0) {
     return (
@@ -85,6 +102,19 @@ export default function AllocationPieChart({
     currency,
     egpRate
   );
+
+  const sorted = [...summaries].sort((a, b) => {
+    const aVal = sortKey === "label" ? a.label : a[sortKey];
+    const bVal = sortKey === "label" ? b.label : b[sortKey];
+    if (typeof aVal === "string" && typeof bVal === "string") {
+      return sortDir === "asc"
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
+    }
+    return sortDir === "asc"
+      ? (aVal as number) - (bVal as number)
+      : (bVal as number) - (aVal as number);
+  });
 
   const chartData = allocation.map((item) => ({
     ...item,
@@ -158,30 +188,53 @@ export default function AllocationPieChart({
           <table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-gray-400 border-b border-gray-100">
-                <th className="text-left pb-2 font-medium">Asset</th>
-                <th className="text-right pb-2 font-medium">Value</th>
-                <th className="text-right pb-2 font-medium">P&L</th>
+                <th className="text-left pb-2 font-medium w-8">#</th>
+                <th
+                  className="text-left pb-2 font-medium cursor-pointer hover:text-gray-600 select-none"
+                  onClick={() => handleSort("label")}
+                >
+                  Asset{sortIndicator("label")}
+                </th>
+                <th
+                  className="text-right pb-2 font-medium cursor-pointer hover:text-gray-600 select-none"
+                  onClick={() => handleSort("percentage")}
+                >
+                  %{sortIndicator("percentage")}
+                </th>
+                <th
+                  className="text-right pb-2 font-medium cursor-pointer hover:text-gray-600 select-none"
+                  onClick={() => handleSort("value")}
+                >
+                  Value{sortIndicator("value")}
+                </th>
+                <th
+                  className="text-right pb-2 font-medium cursor-pointer hover:text-gray-600 select-none"
+                  onClick={() => handleSort("profitLossPct")}
+                >
+                  P&L{sortIndicator("profitLossPct")}
+                </th>
               </tr>
             </thead>
             <tbody>
-              {summaries.map((item) => (
+              {sorted.map((item, idx) => (
                 <tr
                   key={item.label}
                   className="border-b border-gray-50 last:border-0"
                 >
+                  <td className="py-2.5 text-gray-400 text-xs">{idx + 1}</td>
                   <td className="py-2.5">
                     <div className="flex items-center gap-2">
                       <span
-                        className="w-2.5 h-2.5 rounded-full inline-block"
+                        className="w-2.5 h-2.5 rounded-full inline-block flex-shrink-0"
                         style={{ backgroundColor: item.color }}
                       />
                       <span className="font-medium text-gray-900">
                         {item.label}
                       </span>
-                      <span className="text-xs text-gray-400">
-                        {item.percentage.toFixed(1)}%
-                      </span>
                     </div>
+                  </td>
+                  <td className="py-2.5 text-right text-gray-500">
+                    {item.percentage.toFixed(1)}%
                   </td>
                   <td className="py-2.5 text-right text-gray-700">
                     {formatCurrency(item.value, currency)}
