@@ -12,7 +12,9 @@ import {
   Brain,
   PanelLeftClose,
   PanelLeftOpen,
+  RefreshCw,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
 const links = [
@@ -25,6 +27,7 @@ const links = [
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [loggingOut, setLoggingOut] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -84,6 +87,18 @@ export default function Sidebar() {
 
       {/* Bottom section */}
       <div className="flex flex-col gap-1 border-t border-slate-700 pt-3 mt-3">
+        {/* Refresh data */}
+        <button
+          onClick={() => queryClient.invalidateQueries()}
+          className={`flex items-center gap-3 ${
+            collapsed ? "justify-center px-0" : "px-3"
+          } py-2.5 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-800 hover:text-white transition-colors`}
+          title="Refresh all data"
+        >
+          <RefreshCw className="w-5 h-5 flex-shrink-0" />
+          {!collapsed && "Refresh"}
+        </button>
+
         {/* Collapse toggle */}
         <button
           onClick={() => setCollapsed(!collapsed)}
