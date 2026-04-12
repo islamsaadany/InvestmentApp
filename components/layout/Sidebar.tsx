@@ -46,7 +46,7 @@ export default function Sidebar() {
     <aside
       className={`${
         collapsed ? "w-16" : "w-64"
-      } bg-slate-900 min-h-screen p-3 flex flex-col transition-all duration-200`}
+      } bg-slate-900 h-screen sticky top-0 p-3 flex flex-col transition-all duration-200`}
     >
       {/* Logo */}
       <div
