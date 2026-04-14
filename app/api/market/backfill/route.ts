@@ -60,8 +60,6 @@ export async function POST(req: NextRequest) {
 
       if (historicalPrices.length === 0) continue;
 
-      // Use the actual symbol for storage (for gold/silver use GC=F/SI=F for the price,
-      // but store under the investment's symbol)
       const storeSymbol =
         asset.assetType === "gold"
           ? "GOLD"
@@ -69,7 +67,12 @@ export async function POST(req: NextRequest) {
             ? "SILVER"
             : asset.symbol;
 
-      // Batch upsert — skip duplicates
+      // Delete old data for this symbol first (clean slate for re-backfill)
+      await prisma.assetPriceHistory.deleteMany({
+        where: { symbol: storeSymbol },
+      });
+
+      // Insert fresh data
       let inserted = 0;
       for (const { date, price } of historicalPrices) {
         try {

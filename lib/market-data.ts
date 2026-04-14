@@ -300,8 +300,16 @@ export async function getHistoricalPrices(
   toDate: Date
 ): Promise<{ date: string; price: number }[]> {
   switch (assetType) {
-    case "crypto":
+    case "crypto": {
+      // Map CoinGecko IDs (solana, ripple) back to Yahoo tickers (SOL, XRP)
+      const yahooTicker =
+        COIN_YAHOO_MAP[symbol.toLowerCase()] ||
+        (COIN_ID_MAP[symbol.toUpperCase()] ? symbol.toUpperCase() : symbol.toUpperCase());
+      const yahooResult = await getYahooHistoricalPrices(`${yahooTicker}-USD`, fromDate, toDate);
+      if (yahooResult.length > 0) return yahooResult;
+      // Fallback to CoinGecko only if Yahoo fails
       return getCoinGeckoHistoricalPrices(symbol, fromDate, toDate);
+    }
     case "gold":
       return getYahooHistoricalPrices("GC=F", fromDate, toDate);
     case "silver":
