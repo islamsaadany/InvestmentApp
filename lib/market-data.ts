@@ -235,6 +235,7 @@ export async function getYahooHistoricalPrices(
 
 /**
  * Fetch historical daily prices from CoinGecko (crypto).
+ * Falls back to Yahoo Finance if CoinGecko fails.
  * Returns array of { date: "YYYY-MM-DD", price: number }
  */
 export async function getCoinGeckoHistoricalPrices(
@@ -242,6 +243,13 @@ export async function getCoinGeckoHistoricalPrices(
   fromDate: Date,
   toDate: Date
 ): Promise<{ date: string; price: number }[]> {
+  // Try Yahoo Finance first (more reliable for historical data)
+  // Yahoo Finance uses format: BTC-USD, ETH-USD, etc.
+  const yahooSymbol = `${symbol.toUpperCase()}-USD`;
+  const yahooResult = await getYahooHistoricalPrices(yahooSymbol, fromDate, toDate);
+  if (yahooResult.length > 0) return yahooResult;
+
+  // Fallback to CoinGecko
   const coinId = COIN_ID_MAP[symbol.toUpperCase()] || symbol.toLowerCase();
   const from = Math.floor(fromDate.getTime() / 1000);
   const to = Math.floor(toDate.getTime() / 1000);
