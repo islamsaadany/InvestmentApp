@@ -135,7 +135,7 @@ Issue 1: Market data API called on every page render
 - **Framework:** Next.js 16 (App Router) — full-stack (API routes + React frontend)
 - **Language:** TypeScript
 - **Database:** PostgreSQL (Neon serverless) + Prisma 7 (with `@prisma/adapter-neon`)
-- **Market Data:** yfinance (stocks), CoinGecko (crypto), free metals/forex APIs
+- **Market Data:** Yahoo Finance chart API (stocks, metals, crypto historical), CoinGecko (crypto live), exchangerate-api.com (forex)
 - **Charts:** Recharts
 - **Styling:** Tailwind CSS 4
 - **State Management:** TanStack Query (React Query) v5
@@ -144,31 +144,46 @@ Issue 1: Market data API called on every page render
 
 ### Key Directories
 - `app/` - Next.js App Router (pages + API routes)
-  - `app/page.tsx` - Dashboard page
-  - `app/investments/page.tsx` - Investments page
-  - `app/alerts/page.tsx` - Alerts page
-  - `app/api/` - API route handlers (replaces backend)
+  - `app/(app)/` - Route group for authenticated pages (wraps Sidebar + providers)
+    - `app/(app)/page.tsx` - Dashboard page
+    - `app/(app)/investments/page.tsx` - Investments page
+    - `app/(app)/alerts/page.tsx` - Alerts page
+    - `app/(app)/analysis/page.tsx` - Analysis page (market price + value charts)
+    - `app/(app)/expert/page.tsx` - Expert AI page (Halal options trading)
+  - `app/(auth)/` - Route group for unauthenticated pages (login)
+  - `app/api/` - API route handlers
     - `app/api/investments/` - Investment CRUD routes
     - `app/api/portfolio/` - Portfolio summary, allocation, performance, snapshot routes
     - `app/api/alerts/` - Alert CRUD routes
-    - `app/api/market/` - Live price & exchange rate routes
+    - `app/api/market/` - Live price, exchange rate, batch, backfill, sync routes
+    - `app/api/analysis/` - Analysis data routes (assets, price-history, value-history)
+    - `app/api/expert/` - Expert AI chat + watchlist routes
+    - `app/api/auth/` - Login/logout routes (JWT)
     - `app/api/cron/` - Vercel cron job handlers (check-alerts, snapshot)
   - `app/generated/prisma/` - Generated Prisma client (auto-generated, do not edit)
 - `components/` - Reusable React components
-  - `components/layout/` - Sidebar, TopBar
-  - `components/dashboard/` - Portfolio cards, charts, top movers
-  - `components/investments/` - Investment table, form, filters
+  - `components/layout/` - Sidebar (dark blue, collapsible, with refresh)
+  - `components/dashboard/` - Portfolio cards, charts (with popups), top movers
+  - `components/investments/` - Investment table, form (incl. brokerage mode), filters
+  - `components/expert/` - ChatInterface, MessageBubble, WatchlistPanel
   - `components/common/` - CurrencyDisplay, ProfitLossIndicator, LoadingSpinner, EmptyState
   - `components/providers/` - QueryProvider, CurrencyProvider
 - `lib/` - Shared utilities and server-side logic
   - `lib/db.ts` - Prisma client singleton (Neon serverless adapter)
-  - `lib/market-data.ts` - Market data fetching service
+  - `lib/auth.ts` - JWT auth utilities
+  - `lib/market-data.ts` - Live + historical price fetching (Yahoo Finance, CoinGecko, metals, forex)
   - `lib/enrich.ts` - P&L enrichment logic
-  - `lib/formatters.ts` - Currency, date, number formatting
+  - `lib/formatters.ts` - Currency, date, number, axis formatting + `niceYDomain()`
   - `lib/constants.ts` - Asset type labels, colors, symbol maps
-  - `lib/types.ts` - TypeScript interfaces
+  - `lib/types.ts` - TypeScript interfaces (incl. ValuationMode)
+  - `lib/ai-provider.ts` - Multi-provider AI abstraction
+  - `lib/expert-prompts.ts` - Expert agent system prompt + KB loader
+  - `lib/expert/` - Knowledge base and system prompt text files
 - `prisma/` - Prisma schema and migrations
-  - `prisma/schema.prisma` - Database schema (Investment, PriceAlert, PortfolioSnapshot)
+  - `prisma/schema.prisma` - Database schema (Investment, PriceAlert, PortfolioSnapshot, Watchlist, AssetPriceHistory)
+- `scripts/` - Data import utilities (crypto TSV → SQL)
+- `ui-versions/` - UI snapshot rollback points (mandatory before UI changes)
+- `middleware.ts` - JWT auth middleware (protects all non-public routes)
 
 ### Asset Types Supported
 - **Gold** — tracked in grams or troy ounces, price per troy ounce in USD
@@ -178,12 +193,17 @@ Issue 1: Market data API called on every page render
 - **EGX Stocks** — Egyptian Exchange stocks via yfinance (e.g., `COMI.CA`)
 
 ### Important Patterns
-- **App Router** — All pages use Next.js App Router (`app/` directory); API routes use `route.ts` handlers
+- **App Router + Route Groups** — Pages use Next.js App Router with `(app)` (authenticated, with Sidebar) and `(auth)` (login, no sidebar) route groups
+- **JWT Authentication** — `middleware.ts` verifies JWT on all non-public routes; login sets `invest-tracker-session` cookie
 - **Prisma + Neon** — Database accessed via Prisma client with `@prisma/adapter-neon` for serverless compatibility; singleton pattern in `lib/db.ts`
 - **Server/Client split** — API routes and `lib/` run server-side; components in `components/` are client components (`"use client"`) where interactivity is needed
 - **Price caching** — In-memory cache with 5-min TTL to avoid API rate limits
+- **Historical price storage** — Daily prices stored in `asset_price_history` table, backfilled via `/api/market/backfill`, incrementally synced via `/api/market/sync`
+- **Carry-forward logic** — Value-history API fills weekend/holiday price gaps with last known price to prevent chart dips
+- **Crypto symbol mapping** — CoinGecko IDs (solana, ripple) mapped to Yahoo Finance tickers (SOL-USD, XRP-USD) for historical data; store symbols use uppercase tickers (BTC, SOL, XRP); metals use GOLD/SILVER
 - **Dual currency** — All values computed in both USD and EGP using live exchange rate
 - **Weight conversion** — Gold/silver seamlessly convert between grams and troy ounces
+- **Valuation modes** — Investments can be `live` (market price) or `manual` (user-set value, used for EGX brokerage portfolios)
 - **Vercel Cron** — Background tasks (alert checking daily at 8 AM UTC, daily snapshots at 11 PM UTC) handled via Vercel Cron Jobs defined in `vercel.json`. Alert frequency limited by Hobby plan — see PROJECT_DETAILS.md for future upgrade plan
 
 ---
@@ -253,4 +273,4 @@ When making ANY UI change to a React component file:
 
 ---
 
-*Last Updated: April 11, 2026 — Migrated to Next.js 16 + Prisma 7 stack*
+*Last Updated: April 14, 2026 — Added Analysis page, historical price tracking, UI redesigns, route groups, auth, Expert agent*
