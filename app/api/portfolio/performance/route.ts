@@ -24,8 +24,26 @@ export async function GET(req: NextRequest) {
       orderBy: { snapshotDate: "asc" },
     });
 
+    // Filter out weekend dips: if a snapshot's value is less than 30% of
+    // its nearest non-dip neighbor, it's likely a weekend artifact
+    // (missing stock/metal prices). Remove these points.
+    const filtered = snapshots.filter((s, i) => {
+      if (snapshots.length < 3) return true;
+
+      // Find the nearest non-zero neighbor value
+      let neighborValue = 0;
+      if (i > 0) neighborValue = snapshots[i - 1].totalValueUsd;
+      else if (i < snapshots.length - 1) neighborValue = snapshots[i + 1].totalValueUsd;
+
+      // If this value is less than 30% of its neighbor, it's a weekend dip
+      if (neighborValue > 0 && s.totalValueUsd < neighborValue * 0.3) {
+        return false;
+      }
+      return true;
+    });
+
     return NextResponse.json(
-      snapshots.map((s) => ({
+      filtered.map((s) => ({
         id: s.id,
         totalValueUsd: s.totalValueUsd,
         totalValueEgp: s.totalValueEgp,
