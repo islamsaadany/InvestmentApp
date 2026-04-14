@@ -97,8 +97,8 @@ export default function Sidebar() {
             if (refreshing) return;
             setRefreshing(true);
             try {
-              // Record today's asset prices in background (lightweight, not full backfill)
-              fetch("/api/cron/snapshot").catch(() => {});
+              // Sync missing days of price data in background (lightweight — only fills gaps)
+              fetch("/api/market/sync", { method: "POST" }).catch(() => {});
               // Refresh all cached queries
               await queryClient.invalidateQueries();
               await queryClient.refetchQueries();
