@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { GRAMS_PER_TROY_OUNCE } from "@/lib/market-data";
+import { GRAMS_PER_TROY_OUNCE, getUsdToEgpRate } from "@/lib/market-data";
 
 const PERIOD_DAYS: Record<string, number> = {
   "7d": 7,
@@ -75,8 +75,11 @@ export async function GET(req: NextRequest) {
       pricesByDate.get(dateStr)!.set(p.symbol, p.priceUsd);
     }
 
+    // Get current EGP rate for conversion
+    const egpRate = await getUsdToEgpRate();
+
     // Compute portfolio value for each date
-    const result: { date: string; valueUsd: number }[] = [];
+    const result: { date: string; valueUsd: number; valueEgp: number }[] = [];
 
     for (const [dateStr, symbolPrices] of pricesByDate) {
       const snapshotDate = new Date(dateStr);
@@ -90,9 +93,11 @@ export async function GET(req: NextRequest) {
 
         if (inv.valuationMode === "manual") {
           if (inv.currentValue != null) {
-            totalUsd += inv.purchaseCurrency === "EGP"
-              ? inv.currentValue / 50 // approximate for historical
-              : inv.currentValue;
+            if (inv.purchaseCurrency === "EGP") {
+              totalUsd += inv.currentValue / egpRate;
+            } else {
+              totalUsd += inv.currentValue;
+            }
             hasAnyPrice = true;
           }
           continue;
@@ -124,6 +129,7 @@ export async function GET(req: NextRequest) {
         result.push({
           date: dateStr,
           valueUsd: Math.round(totalUsd * 100) / 100,
+          valueEgp: Math.round(totalUsd * egpRate * 100) / 100,
         });
       }
     }
