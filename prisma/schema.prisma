@@ -79,3 +79,16 @@ model Watchlist {
   @@unique([symbol])
   @@map("watchlist")
 }
+
+model AssetPriceHistory {
+  id           Int       @id @default(autoincrement())
+  symbol       String    @db.VarChar(50)
+  assetType    AssetType @map("asset_type")
+  priceUsd     Float     @map("price_usd")
+  recordedDate DateTime  @map("recorded_date") @db.Date
+
+  @@unique([symbol, recordedDate])
+  @@index([recordedDate])
+  @@index([symbol])
+  @@map("asset_price_history")
+}

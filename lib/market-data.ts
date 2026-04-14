@@ -187,6 +187,113 @@ export async function getCurrentPrice(
   }
 }
 
+// --- Historical Price Fetching ---
+
+/**
+ * Fetch historical daily prices from Yahoo Finance (stocks, metals).
+ * Returns array of { date: "YYYY-MM-DD", price: number }
+ */
+export async function getYahooHistoricalPrices(
+  symbol: string,
+  fromDate: Date,
+  toDate: Date
+): Promise<{ date: string; price: number }[]> {
+  const period1 = Math.floor(fromDate.getTime() / 1000);
+  const period2 = Math.floor(toDate.getTime() / 1000);
+
+  try {
+    const res = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?period1=${period1}&period2=${period2}&interval=1d`,
+      {
+        signal: AbortSignal.timeout(30000),
+        headers: { "User-Agent": "Mozilla/5.0" },
+      }
+    );
+    const data = await res.json();
+    const result = data.chart?.result?.[0];
+    if (!result) return [];
+
+    const timestamps: number[] = result.timestamp || [];
+    const closes: (number | null)[] =
+      result.indicators?.quote?.[0]?.close || [];
+
+    const prices: { date: string; price: number }[] = [];
+    for (let i = 0; i < timestamps.length; i++) {
+      const close = closes[i];
+      if (close != null) {
+        const d = new Date(timestamps[i] * 1000);
+        const dateStr = d.toISOString().split("T")[0];
+        prices.push({ date: dateStr, price: close });
+      }
+    }
+    return prices;
+  } catch (err) {
+    console.error(`Yahoo historical fetch failed for ${symbol}:`, err);
+    return [];
+  }
+}
+
+/**
+ * Fetch historical daily prices from CoinGecko (crypto).
+ * Returns array of { date: "YYYY-MM-DD", price: number }
+ */
+export async function getCoinGeckoHistoricalPrices(
+  symbol: string,
+  fromDate: Date,
+  toDate: Date
+): Promise<{ date: string; price: number }[]> {
+  const coinId = COIN_ID_MAP[symbol.toUpperCase()] || symbol.toLowerCase();
+  const from = Math.floor(fromDate.getTime() / 1000);
+  const to = Math.floor(toDate.getTime() / 1000);
+
+  try {
+    const res = await fetch(
+      `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart/range?vs_currency=usd&from=${from}&to=${to}`,
+      { signal: AbortSignal.timeout(30000) }
+    );
+    const data = await res.json();
+    const rawPrices: [number, number][] = data.prices || [];
+
+    // CoinGecko returns multiple data points per day — deduplicate to one per day
+    const dailyMap = new Map<string, number>();
+    for (const [timestamp, price] of rawPrices) {
+      const dateStr = new Date(timestamp).toISOString().split("T")[0];
+      dailyMap.set(dateStr, price); // Last value for each day wins
+    }
+
+    return Array.from(dailyMap.entries())
+      .map(([date, price]) => ({ date, price }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  } catch (err) {
+    console.error(`CoinGecko historical fetch failed for ${symbol}:`, err);
+    return [];
+  }
+}
+
+/**
+ * Unified historical price fetcher.
+ */
+export async function getHistoricalPrices(
+  assetType: string,
+  symbol: string,
+  fromDate: Date,
+  toDate: Date
+): Promise<{ date: string; price: number }[]> {
+  switch (assetType) {
+    case "crypto":
+      return getCoinGeckoHistoricalPrices(symbol, fromDate, toDate);
+    case "gold":
+      return getYahooHistoricalPrices("GC=F", fromDate, toDate);
+    case "silver":
+      return getYahooHistoricalPrices("SI=F", fromDate, toDate);
+    case "us_stock":
+    case "egx_stock":
+      return getYahooHistoricalPrices(symbol, fromDate, toDate);
+    default:
+      return [];
+  }
+}
+
 // --- Constants ---
 
 export const GRAMS_PER_TROY_OUNCE = 31.1035;
