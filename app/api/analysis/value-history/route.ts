@@ -12,11 +12,8 @@ const PERIOD_DAYS: Record<string, number> = {
 /**
  * GET /api/analysis/value-history?assetType=crypto&symbol=BTC&period=30d
  * Returns daily portfolio value history for assets matching the filter.
- * Used for Chart A (asset value over time).
- *
- * - No filters: total portfolio value per day (all assets combined)
- * - assetType only: sum of that asset type's value per day
- * - assetType + symbol: single asset's value per day
+ * Uses carry-forward logic: if an asset has no price on a given day
+ * (e.g., weekends for stocks), the last known price is used.
  */
 export async function GET(req: NextRequest) {
   try {
@@ -50,39 +47,87 @@ export async function GET(req: NextRequest) {
       priceSymbols.add(storeSymbol);
     }
 
-    // Fetch price history
-    const priceWhere: Record<string, any> = {
-      symbol: { in: [...priceSymbols] },
-    };
-    if (period !== "all" && PERIOD_DAYS[period]) {
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - PERIOD_DAYS[period]);
-      priceWhere.recordedDate = { gte: cutoff };
-    }
-
+    // Fetch ALL price history for these symbols (no period filter on DB query)
+    // so we can carry forward prices from before the visible period
     const prices = await prisma.assetPriceHistory.findMany({
-      where: priceWhere,
+      where: {
+        symbol: { in: [...priceSymbols] },
+      },
       orderBy: { recordedDate: "asc" },
     });
 
-    // Group prices by date
-    const pricesByDate = new Map<string, Map<string, number>>();
-    for (const p of prices) {
-      const dateStr = p.recordedDate.toISOString().split("T")[0];
-      if (!pricesByDate.has(dateStr)) {
-        pricesByDate.set(dateStr, new Map());
-      }
-      pricesByDate.get(dateStr)!.set(p.symbol, p.priceUsd);
+    if (prices.length === 0) {
+      return NextResponse.json([]);
     }
 
-    // Get current EGP rate for conversion
+    // Build a map: symbol → sorted array of { date, price }
+    const priceTimelines = new Map<string, { date: string; price: number }[]>();
+    for (const p of prices) {
+      const dateStr = p.recordedDate.toISOString().split("T")[0];
+      if (!priceTimelines.has(p.symbol)) {
+        priceTimelines.set(p.symbol, []);
+      }
+      priceTimelines.get(p.symbol)!.push({ date: dateStr, price: p.priceUsd });
+    }
+
+    // Collect all unique dates across all symbols
+    const allDatesSet = new Set<string>();
+    for (const timeline of priceTimelines.values()) {
+      for (const entry of timeline) {
+        allDatesSet.add(entry.date);
+      }
+    }
+    const allDates = [...allDatesSet].sort();
+
+    // Apply period filter to dates (for output only)
+    let filteredDates = allDates;
+    if (period !== "all" && PERIOD_DAYS[period]) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - PERIOD_DAYS[period]);
+      const cutoffStr = cutoff.toISOString().split("T")[0];
+      filteredDates = allDates.filter((d) => d >= cutoffStr);
+    }
+
+    // Build price lookup per symbol with carry-forward
+    // For each symbol, create a map of date → price, filling gaps with last known
+    const symbolPriceLookup = new Map<string, Map<string, number>>();
+    for (const [sym, timeline] of priceTimelines) {
+      const lookup = new Map<string, number>();
+      let lastPrice = 0;
+      let timelineIdx = 0;
+
+      for (const date of allDates) {
+        // Check if this symbol has a price for this date
+        while (
+          timelineIdx < timeline.length &&
+          timeline[timelineIdx].date < date
+        ) {
+          lastPrice = timeline[timelineIdx].price;
+          timelineIdx++;
+        }
+        if (
+          timelineIdx < timeline.length &&
+          timeline[timelineIdx].date === date
+        ) {
+          lastPrice = timeline[timelineIdx].price;
+          timelineIdx++;
+        }
+
+        if (lastPrice > 0) {
+          lookup.set(date, lastPrice);
+        }
+      }
+      symbolPriceLookup.set(sym, lookup);
+    }
+
+    // Get EGP rate
     const egpRate = await getUsdToEgpRate();
 
-    // Compute portfolio value for each date
+    // Compute portfolio value for each filtered date
     const result: { date: string; valueUsd: number; valueEgp: number }[] = [];
 
-    for (const [dateStr, symbolPrices] of pricesByDate) {
-      const snapshotDate = new Date(dateStr);
+    for (const dateStr of filteredDates) {
+      const snapshotDate = new Date(dateStr + "T12:00:00Z"); // noon UTC to avoid timezone edge cases
       let totalUsd = 0;
       let hasAnyPrice = false;
 
@@ -110,7 +155,7 @@ export async function GET(req: NextRequest) {
               ? "SILVER"
               : inv.symbol;
 
-        const price = symbolPrices.get(storeSymbol);
+        const price = symbolPriceLookup.get(storeSymbol)?.get(dateStr);
         if (price == null) continue;
 
         hasAnyPrice = true;
