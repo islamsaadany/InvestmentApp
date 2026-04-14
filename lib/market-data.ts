@@ -233,9 +233,15 @@ export async function getYahooHistoricalPrices(
   }
 }
 
+// Reverse map: CoinGecko ID → Yahoo Finance ticker
+const COIN_YAHOO_MAP: Record<string, string> = {};
+for (const [ticker, coinId] of Object.entries(COIN_ID_MAP)) {
+  COIN_YAHOO_MAP[coinId] = ticker;
+}
+
 /**
  * Fetch historical daily prices from CoinGecko (crypto).
- * Falls back to Yahoo Finance if CoinGecko fails.
+ * Tries Yahoo Finance first with proper symbol mapping.
  * Returns array of { date: "YYYY-MM-DD", price: number }
  */
 export async function getCoinGeckoHistoricalPrices(
@@ -243,9 +249,15 @@ export async function getCoinGeckoHistoricalPrices(
   fromDate: Date,
   toDate: Date
 ): Promise<{ date: string; price: number }[]> {
-  // Try Yahoo Finance first (more reliable for historical data)
-  // Yahoo Finance uses format: BTC-USD, ETH-USD, etc.
-  const yahooSymbol = `${symbol.toUpperCase()}-USD`;
+  // Resolve to Yahoo ticker: if symbol is a CoinGecko ID (e.g., "solana"),
+  // map it to the Yahoo ticker (e.g., "SOL")
+  const yahooTicker =
+    COIN_YAHOO_MAP[symbol.toLowerCase()] || // "solana" → "SOL"
+    COIN_ID_MAP[symbol.toUpperCase()]       // "SOL" → already a ticker
+      ? symbol.toUpperCase()
+      : symbol.toUpperCase();
+
+  const yahooSymbol = `${yahooTicker}-USD`;
   const yahooResult = await getYahooHistoricalPrices(yahooSymbol, fromDate, toDate);
   if (yahooResult.length > 0) return yahooResult;
 
