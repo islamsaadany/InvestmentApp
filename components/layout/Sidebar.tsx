@@ -97,6 +97,9 @@ export default function Sidebar() {
             if (refreshing) return;
             setRefreshing(true);
             try {
+              // Record today's asset prices in background (lightweight, not full backfill)
+              fetch("/api/cron/snapshot").catch(() => {});
+              // Refresh all cached queries
               await queryClient.invalidateQueries();
               await queryClient.refetchQueries();
               const now = new Date().toLocaleTimeString("en-US", {
