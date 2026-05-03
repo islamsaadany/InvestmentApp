@@ -92,3 +92,24 @@ model AssetPriceHistory {
   @@index([symbol])
   @@map("asset_price_history")
 }
+
+enum SplitAction {
+  applied
+  skipped
+}
+
+model AppliedSplit {
+  id            Int         @id @default(autoincrement())
+  symbol        String      @db.VarChar(50)
+  splitDate     DateTime    @map("split_date") @db.Date
+  ratio         String      @db.VarChar(20)
+  numerator     Float
+  denominator   Float
+  action        SplitAction
+  investmentId  Int?        @map("investment_id")
+  recordedAt    DateTime    @default(now()) @map("recorded_at")
+
+  @@unique([symbol, splitDate, investmentId])
+  @@index([symbol])
+  @@map("applied_splits")
+}

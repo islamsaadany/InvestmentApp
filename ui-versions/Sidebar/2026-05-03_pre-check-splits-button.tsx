@@ -14,14 +14,10 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   RefreshCw,
-  Split,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import toast from "react-hot-toast";
-import SplitDetectionModal, {
-  type PendingAdjustment,
-} from "@/components/common/SplitDetectionModal";
 
 const links = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -38,12 +34,6 @@ export default function Sidebar() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [checkingSplits, setCheckingSplits] = useState(false);
-  const [splitModalOpen, setSplitModalOpen] = useState(false);
-  const [pricesFixed, setPricesFixed] = useState<string[]>([]);
-  const [pendingAdjustments, setPendingAdjustments] = useState<
-    PendingAdjustment[]
-  >([]);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -136,52 +126,6 @@ export default function Sidebar() {
           {!collapsed && (refreshing ? "Refreshing..." : "Refresh")}
         </button>
 
-        {/* Check Splits */}
-        <button
-          onClick={async () => {
-            if (checkingSplits) return;
-            setCheckingSplits(true);
-            try {
-              const res = await fetch("/api/market/check-splits", {
-                method: "POST",
-              });
-              if (!res.ok) throw new Error("Check failed");
-              const data = await res.json();
-              const fixed: string[] = data.pricesFixed ?? [];
-              const pending: PendingAdjustment[] =
-                data.pendingAdjustments ?? [];
-
-              if (fixed.length === 0 && pending.length === 0) {
-                toast.success("No stock splits detected");
-              } else {
-                setPricesFixed(fixed);
-                setPendingAdjustments(pending);
-                setSplitModalOpen(true);
-                if (fixed.length > 0) {
-                  await queryClient.invalidateQueries();
-                }
-              }
-            } catch {
-              toast.error("Split check failed — try again");
-            } finally {
-              setCheckingSplits(false);
-            }
-          }}
-          disabled={checkingSplits}
-          className={`flex items-center gap-3 ${
-            collapsed ? "justify-center px-0" : "px-3"
-          } py-2.5 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-800 hover:text-white transition-colors disabled:opacity-50`}
-          title="Check Splits"
-        >
-          <Split
-            className={`w-5 h-5 flex-shrink-0 ${
-              checkingSplits ? "animate-spin" : ""
-            }`}
-          />
-          {!collapsed &&
-            (checkingSplits ? "Checking..." : "Check Splits")}
-        </button>
-
         {/* Collapse toggle */}
         <button
           onClick={() => setCollapsed(!collapsed)}
@@ -213,16 +157,6 @@ export default function Sidebar() {
           {!collapsed && (loggingOut ? "Signing out..." : "Sign Out")}
         </button>
       </div>
-
-      <SplitDetectionModal
-        open={splitModalOpen}
-        pricesFixed={pricesFixed}
-        pendingAdjustments={pendingAdjustments}
-        onClose={() => setSplitModalOpen(false)}
-        onResolved={() => {
-          queryClient.invalidateQueries();
-        }}
-      />
     </aside>
   );
 }
