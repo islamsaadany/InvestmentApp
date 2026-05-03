@@ -47,9 +47,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Adjust purchase_price by the inverse of the split factor so the
+    // total cost basis (purchase_price × quantity) stays constant.
+    // 2-for-1 split: quantity ×2, purchase_price ÷2.
+    const factor = numerator / denominator;
+    const adjustedPurchasePrice = investment.purchasePrice / factor;
+
     await prisma.investment.update({
       where: { id: investmentId },
-      data: { quantity: newQuantity },
+      data: {
+        quantity: newQuantity,
+        purchasePrice: adjustedPurchasePrice,
+      },
     });
 
     await prisma.appliedSplit.upsert({
