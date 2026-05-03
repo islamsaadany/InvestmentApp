@@ -4,10 +4,22 @@ import { getHistoricalPrices, getUsdToEgpRate, GRAMS_PER_TROY_OUNCE } from "@/li
 
 export async function POST(req: NextRequest) {
   try {
+    // Optional ?symbol=VGT filter — when present, only that one asset is re-backfilled.
+    // Useful after a stock split when historical prices need to be re-fetched
+    // (split-adjusted) without wiping every other asset's history.
+    const symbolFilter = req.nextUrl.searchParams.get("symbol")?.trim() || "";
+
     // Get all investments to determine which assets to backfill
-    const investments = await prisma.investment.findMany();
+    const investmentWhere: Record<string, any> = {};
+    if (symbolFilter) investmentWhere.symbol = symbolFilter;
+
+    const investments = await prisma.investment.findMany({ where: investmentWhere });
     if (investments.length === 0) {
-      return NextResponse.json({ message: "No investments found" });
+      return NextResponse.json({
+        message: symbolFilter
+          ? `No investments found for symbol "${symbolFilter}"`
+          : "No investments found",
+      });
     }
 
     // Find the earliest purchase date across all investments, then go 1 month before
@@ -100,11 +112,16 @@ export async function POST(req: NextRequest) {
       results.push({ symbol: storeSymbol, assetType: asset.assetType, count: inserted });
     }
 
-    // Also backfill portfolio snapshots from the historical price data
-    await backfillPortfolioSnapshots(investments, fromDate, toDate);
+    // Skip portfolio-snapshot rebuild when filtering to a single symbol —
+    // a snapshot computed from one asset would be wrong for the whole portfolio.
+    if (!symbolFilter) {
+      await backfillPortfolioSnapshots(investments, fromDate, toDate);
+    }
 
     return NextResponse.json({
-      message: "Backfill complete",
+      message: symbolFilter
+        ? `Backfill complete for "${symbolFilter}"`
+        : "Backfill complete",
       fromDate: fromDate.toISOString().split("T")[0],
       toDate: toDate.toISOString().split("T")[0],
       assets: results,
