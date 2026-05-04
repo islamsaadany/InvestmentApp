@@ -539,7 +539,7 @@ export default function AssetDetailModal({
             ) : (
               <>
                 <ResponsiveContainer width="100%" height={320}>
-                  <LineChart data={priceChartData}>
+                  <LineChart key={`price-${period}`} data={priceChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                     <XAxis
                       dataKey="dateLabel"
@@ -703,7 +703,7 @@ export default function AssetDetailModal({
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={320}>
-              <AreaChart data={valueChartData}>
+              <AreaChart key={`value-${period}`} data={valueChartData}>
                 <defs>
                   <linearGradient
                     id={`miniGrad-${activeAssetType}`}
