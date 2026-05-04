@@ -42,7 +42,8 @@ export function formatDate(dateStr: string | null | undefined): string {
  */
 export function formatAxisValue(value: number): string {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `${Math.round(value / 1_000)}K`;
+  if (value >= 10_000) return `${(value / 1_000).toFixed(0)}K`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
   if (value >= 1) return value.toFixed(0);
   return value.toFixed(2);
 }

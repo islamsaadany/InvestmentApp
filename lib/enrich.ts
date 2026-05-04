@@ -15,6 +15,13 @@ export async function enrichInvestment(
   let profitLoss: number | null = null;
   let profitLossPct: number | null = null;
 
+  // Use stored historical exchange rate when available (more accurate),
+  // fallback to current rate.
+  const effectiveEgpRate =
+    inv.purchaseExchangeRate && inv.purchaseExchangeRate > 0
+      ? inv.purchaseExchangeRate
+      : egpRate;
+
   if (inv.valuationMode === "manual") {
     // Manual valuation (e.g., EGX brokerage portfolio)
     // currentValue is stored in purchaseCurrency
@@ -29,7 +36,9 @@ export async function enrichInvestment(
 
       totalCost = inv.purchasePrice * inv.quantity;
       const totalCostUsd =
-        inv.purchaseCurrency === "EGP" ? totalCost / egpRate : totalCost;
+        inv.purchaseCurrency === "EGP"
+          ? totalCost / effectiveEgpRate
+          : totalCost;
 
       if (totalCostUsd > 0) {
         profitLoss = currentValueUsd - totalCostUsd;
@@ -41,21 +50,34 @@ export async function enrichInvestment(
     currentPrice = await getCurrentPrice(inv.assetType, inv.symbol);
 
     if (currentPrice != null) {
+      // Effective qty in chart unit (troy oz for grams, raw otherwise),
+      // adjusted for metal purity so 21K gold contributes only 87.5% to value
+      let effectiveQty: number;
       if (
         (inv.assetType === "gold" || inv.assetType === "silver") &&
         inv.weightUnit === "grams"
       ) {
-        const qtyOz = inv.quantity / GRAMS_PER_TROY_OUNCE;
-        currentValueUsd = currentPrice * qtyOz;
+        effectiveQty = inv.quantity / GRAMS_PER_TROY_OUNCE;
       } else {
-        currentValueUsd = currentPrice * inv.quantity;
+        effectiveQty = inv.quantity;
+      }
+      if (
+        (inv.assetType === "gold" || inv.assetType === "silver") &&
+        inv.purityPercent != null &&
+        inv.purityPercent > 0 &&
+        inv.purityPercent < 100
+      ) {
+        effectiveQty = effectiveQty * (inv.purityPercent / 100);
       }
 
+      currentValueUsd = currentPrice * effectiveQty;
       currentValueEgp = currentValueUsd * egpRate;
 
       totalCost = inv.purchasePrice * inv.quantity;
       const totalCostUsd =
-        inv.purchaseCurrency === "EGP" ? totalCost / egpRate : totalCost;
+        inv.purchaseCurrency === "EGP"
+          ? totalCost / effectiveEgpRate
+          : totalCost;
 
       if (totalCostUsd > 0) {
         profitLoss = currentValueUsd - totalCostUsd;
@@ -73,6 +95,8 @@ export async function enrichInvestment(
     purchasePrice: inv.purchasePrice,
     purchaseCurrency: inv.purchaseCurrency,
     purchaseDate: inv.purchaseDate?.toISOString() ?? null,
+    purchaseExchangeRate: inv.purchaseExchangeRate,
+    purityPercent: inv.purityPercent,
     weightUnit: inv.weightUnit,
     valuationMode: inv.valuationMode,
     currentValue: inv.currentValue,

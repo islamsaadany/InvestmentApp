@@ -381,11 +381,22 @@ Common Egyptian stocks on yfinance (`.CA` suffix for Cairo Exchange):
 
 ---
 
-## 13. Expert Agent (Halal Options Trading Advisor)
+## 13. Expert Agent (Multi-Tab Halal Investment Advisor)
 
-**Added:** April 12, 2026
+**Added:** April 12, 2026 — Initial Halal options trading advisor
+**Updated:** May 4, 2026 — Split into 3 tabs: Options, US Stocks, Crypto
 
-**What it is:** An AI-powered Expert page that provides Halal-compliant US stock options trading recommendations using the HALAL-OPT trading agent framework.
+The Expert page now has **3 tabs**, each with its own AI agent persona, system prompt, knowledge base, and dedicated watchlist:
+
+| Tab | Agent | Scope |
+|-----|-------|-------|
+| **Options** | HALAL-OPT | Halal-compliant US stock options strategies (existing — unchanged) |
+| **US Stocks** | HALAL-EQUITY | Halal-screened US stock purchase recommendations (Analyze + Discover modes) |
+| **Crypto** | HALAL-CRYPTO | Halal-acceptable cryptocurrency purchase recommendations (Analyze + Discover modes) |
+
+Each tab shares: streaming chat UI, portfolio context toggle, scholarly Halal screening, and a category-scoped watchlist. Switching tabs swaps the chat session, the system prompt loaded by the API, and the watchlist filter.
+
+### Original Options scope (HALAL-OPT)
 
 **Features:**
 - Chat-style interface with streaming AI responses (Claude Opus by default)
@@ -413,7 +424,38 @@ Common Egyptian stocks on yfinance (`.CA` suffix for Cairo Exchange):
 - `prisma/schema.prisma` — Added `Watchlist` model
 
 **Database model added:**
-- `Watchlist` (id, symbol, name, addedAt) with unique constraint on symbol
+- `Watchlist` (id, symbol, name, **category**, addedAt) — composite unique constraint on `(symbol, category)`. Category is an enum: `options | us_stocks | crypto`. Existing rows default to `options`.
+
+### New tabs (May 4, 2026): US Stocks + Crypto
+
+**Files added:**
+- `components/expert/ExpertTabs.tsx` — top-level tab switcher (Options / US Stocks / Crypto)
+- `lib/expert/us-stocks-system-prompt.txt` — HALAL-EQUITY agent system prompt
+- `lib/expert/us-stocks-kb.txt` — placeholder KB (full deep-research KB pending external delivery)
+- `lib/expert/crypto-system-prompt.txt` — HALAL-CRYPTO agent system prompt
+- `lib/expert/crypto-kb.txt` — placeholder KB (full deep-research KB pending external delivery)
+- `prisma/migrations/20260504_add_watchlist_category/migration.sql` — adds `WatchlistCategory` enum + `category` column to `watchlist`
+
+**Files modified:**
+- `app/(app)/expert/page.tsx` — wraps content in tabs, passes mode to children
+- `components/expert/ChatInterface.tsx` — accepts `mode` prop, sends it in request body, swaps welcome message + placeholder per mode, scopes chat session per mode
+- `components/expert/WatchlistPanel.tsx` — accepts `category` prop, filters API calls by category
+- `app/api/expert/chat/route.ts` — reads `mode` from request body, loads the right system prompt + KB, filters watchlist by mode's category
+- `app/api/expert/watchlist/route.ts` — accepts `category` query/body parameter for GET/POST/DELETE
+- `lib/expert-prompts.ts` — refactored to multi-mode loader (per-mode system prompt + KB files)
+- `lib/types.ts` — added `WatchlistCategory` and `ExpertMode` types; added `category` to `WatchlistItem`
+- `prisma/schema.prisma` — added `WatchlistCategory` enum, `category` field, changed unique constraint to `(symbol, category)`
+- `tsconfig.json` — excluded `ui-versions/` from type-checking (snapshot folder)
+
+**API behavior changes:**
+- `POST /api/expert/chat` — now accepts `mode: "options" | "us-stocks" | "crypto"` in body (defaults to `options`)
+- `GET/POST/DELETE /api/expert/watchlist` — now accepts `category` parameter (defaults to `options`)
+
+**Halal compliance approach across tabs:**
+- US Stocks: AAOIFI Standard 21 + Zoya/Musaffa/IdealRatings cross-check, sector exclusions, debt/interest ratio thresholds
+- Crypto: Conservative — defaults to stricter scholarly view; flags scholarly debate on PoS staking, stablecoins, DeFi tokens; instant-avoid list for memecoins, lending protocols, privacy coins
+
+**Note on KBs:** The `us-stocks-kb.txt` and `crypto-kb.txt` files currently contain interim placeholder guidance. Full deep-research KBs are being prepared externally and will replace these files when ready.
 
 **Dependencies added:**
 - `ai` (Vercel AI SDK core)
@@ -462,4 +504,116 @@ DELETE /api/expert/watchlist?symbol=AAPL → Remove from watchlist
 
 ---
 
-*Last Updated: April 12, 2026 — Added Expert Agent page (Halal Options Trading Advisor)*
+## 15. Average Down Analyzer
+
+**Added:** May 4, 2026
+
+A rule-based portfolio analyzer that flags positions where the current market price is below the user's avg cost or lowest individual purchase, and recommends whether averaging down makes sense. No AI calls — pure math on stored purchase data + live prices.
+
+**Where it lives:**
+- TopBar gets a new button (trending-down icon) next to the refresh button
+- Click opens a modal with summary stats + a list of recommendations sorted by actionability
+
+**Buckets and thresholds:**
+| Bucket | Trigger | Recommendation |
+|---|---|---|
+| `below_lowest` | Current < lowest individual purchase | Strongest averaging-down signal |
+| `good_dip` | 5-25% below avg cost | Good averaging-down opportunity |
+| `deep_dip` | >25% below avg cost | Verify thesis before adding (large drawdown warning) |
+| `small_dip` | 0-5% below avg cost | Within noise — wait for deeper dip |
+| `above_avg` | Current >= avg cost | No averaging case |
+
+**Files added:**
+- `lib/average-down-analyzer.ts` — pure-function analyzer (`analyzeInvestments`)
+- `lib/chart-helpers.ts` — shared price/quantity unit-conversion helpers (used by analyzer + chart modal)
+- `components/dashboard/AverageDownAnalyzerModal.tsx` — modal UI with summary strip + filter tabs (Actionable / All) + recommendation cards
+
+**Files modified:**
+- `components/layout/TopBar.tsx` — added analyzer button + modal mount
+
+**Future:** AI-powered version planned (see `FUTURE_FEATURES.md`).
+
+---
+
+## 16. Asset Detail Modal — Redesign
+
+**Updated:** May 4, 2026
+
+The modal that opens when clicking a pie-chart slice or summary-table row was redesigned:
+
+**Behavior changes:**
+- **Bigger** — width grew from 480px to 800px to fit new content
+- **Asset-type tabs** at the top — only types user owns (so a portfolio without EGX won't show an EGX tab). Switch between Gold / Silver / Crypto / US Stocks / EGX without closing the modal.
+- **Drill-down dropdown** for multi-asset types — when on Crypto / US Stocks / EGX (which can hold multiple individual assets), a dropdown next to the chart-tab buttons lets the user switch between "Aggregate" and any individual asset. Single-asset types (Gold / Silver) skip the dropdown.
+- **Lowest-purchase reference line** added (green dashed) alongside avg-cost (red dashed) and current-price (orange dashed).
+- **Click-to-toggle legend** — clicking any legend item below the chart shows/hides that line or marker.
+
+**Bug fixes:**
+- **Purchase dots now plot at user's actual purchase price** (previously plotted at market price on the purchase date — visually inconsistent with the avg-cost line). For metals bought in grams, prices are converted to USD per troy ounce to match the chart axis.
+- **Y-axis tick formatter** — `formatAxisValue` now uses 1 decimal place for K/M values when below 10K (so `4500` shows as `4.5K`, not `5K`), eliminating duplicate adjacent ticks.
+
+**Files added:**
+- `components/dashboard/AssetDetailModal.tsx` — new dedicated modal component (extracted from inline `AssetMiniChartPopupWrapper`)
+- `lib/chart-helpers.ts` — shared unit-conversion helpers
+
+**Files modified:**
+- `components/dashboard/AllocationPieChart.tsx` — removed inline popup, imports new modal, passes full investments + egpRate
+- `lib/formatters.ts` — fixed `formatAxisValue` rounding
+
+---
+
+## 17. Historical EGP rate + metal purity per investment
+
+**Added:** May 4, 2026
+
+To make P&L, avg-cost, and chart purchase markers accurate, every investment can now store the **exchange rate at purchase time** and the **metal purity** (gold karat / silver fineness). Without these, the system falls back to current EGP rate and assumes pure-grade metal — which makes purchase dots drift below the spot price line on the asset detail chart.
+
+**Schema additions to `Investment`:**
+| Field | Type | Notes |
+|---|---|---|
+| `purchaseExchangeRate` | Float? | EGP per USD on the purchase day; null = use current rate |
+| `purityPercent` | Float? | 0-100 (24K=100, 21K=87.5, 925=92.5); null = treat as pure |
+
+Migration: `prisma/migrations/20260504_add_purchase_rate_purity/migration.sql`. Both columns are nullable so existing rows continue working unchanged.
+
+**Conversion logic updated:**
+- `lib/chart-helpers.ts` — uses stored `purchaseExchangeRate` when present, falls back to `egpRate` arg; divides by `purityPercent / 100` so 21K-gold dots line up with 24K spot price.
+- `lib/enrich.ts` — same logic applied to P&L computation. Quantity is also adjusted by purity for value calculations.
+- `app/api/analysis/value-history/route.ts` — applies purity in portfolio-value-over-time calculation.
+
+**Investment form (`components/investments/InvestmentForm.tsx`):**
+- New **Karat / Fineness dropdown** for gold (24K / 22K / 21K / 18K / 14K) and silver (.999 / .925 / .916 / .800).
+- New **"Exchange rate at purchase"** field, only shown when purchase currency is EGP. Includes an **Auto-fill** button that fetches the historical USD/EGP rate from Frankfurter for the selected purchase date.
+
+**New API endpoints:**
+| Route | Purpose |
+|---|---|
+| `GET /api/market/historical-egp-rate?date=YYYY-MM-DD` | Returns historical USD/EGP rate via Frankfurter (free, ECB-based). Cached 24h. |
+| `POST /api/admin/backfill-historical-rates` | One-shot job: walks every EGP-denominated investment with no stored rate, fetches Frankfurter rate for its purchase date, persists it. Body `{dryRun: true}` for a no-write preview. |
+
+**To backfill existing investments after applying the migration:**
+```bash
+curl -X POST https://your-app.vercel.app/api/admin/backfill-historical-rates \
+  -H "Content-Type: application/json" \
+  -d '{"dryRun": true}'   # preview first
+```
+
+**Caveat:** Frankfurter uses ECB/official rates. If you transacted at a parallel-market rate (Egyptian black market in early 2024 was significantly different), the auto-filled rate will be off — manually edit the field after the form fetches it.
+
+---
+
+## 18. Asset Detail Modal — Date range selector + pre-window snap + downsampling
+
+**Added:** May 4, 2026
+
+**Date range selector:** above the chart, choose **90D / 3M / 6M / 1Y / All** (default 90D). The selector controls the price-history fetch window. "All" fetches all stored history.
+
+**Pre-window snap with label:** Purchase markers whose date falls before the chart's leftmost visible date are **snapped to the leftmost edge** and rendered with a small amber color + a tiny date label (e.g. `← Nov 25`) so it's clear the dot was pulled in. They no longer pretend to be in-window.
+
+**Downsampling:** When the chart would have more than `DOWNSAMPLE_THRESHOLD` (180) points (e.g. selecting "All" on a portfolio with daily history going back years), the chart **down-samples to weekly averages** to keep rendering responsive. Below the threshold the daily resolution is preserved.
+
+**Updated period support:** `app/api/analysis/price-history/route.ts` and `app/api/analysis/value-history/route.ts` now accept `3m`, `6m`, `1y`, and `all` periods (in addition to existing `7d`, `30d`, `90d`).
+
+---
+
+*Last Updated: May 4, 2026 — Added Historical EGP rate + metal purity tracking + chart range selector*

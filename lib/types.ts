@@ -11,6 +11,8 @@ export interface InvestmentWithLiveData {
   purchasePrice: number;
   purchaseCurrency: string;
   purchaseDate: string | null;
+  purchaseExchangeRate: number | null;
+  purityPercent: number | null;
   weightUnit: WeightUnit | null;
   valuationMode: ValuationMode;
   currentValue: number | null;
@@ -65,10 +67,14 @@ export interface PriceAlertData {
 }
 
 // Expert Agent types
+export type WatchlistCategory = "options" | "us_stocks" | "crypto";
+export type ExpertMode = "options" | "us-stocks" | "crypto";
+
 export interface WatchlistItem {
   id: number;
   symbol: string;
   name: string | null;
+  category: WatchlistCategory;
   addedAt: string;
 }
 

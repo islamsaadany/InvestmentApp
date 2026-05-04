@@ -25,21 +25,29 @@ enum ValuationMode {
   manual
 }
 
+enum WatchlistCategory {
+  options
+  us_stocks
+  crypto
+}
+
 model Investment {
-  id               Int        @id @default(autoincrement())
-  name             String     @db.VarChar(200)
-  symbol           String     @db.VarChar(50)
-  assetType        AssetType  @map("asset_type")
-  quantity         Float
-  purchasePrice    Float      @map("purchase_price")
-  purchaseCurrency String     @default("USD") @map("purchase_currency") @db.VarChar(10)
-  purchaseDate     DateTime?  @map("purchase_date")
-  weightUnit       WeightUnit? @map("weight_unit")
-  valuationMode    ValuationMode @default(live) @map("valuation_mode")
-  currentValue     Float?     @map("current_value")
-  notes            String?    @db.VarChar(500)
-  createdAt        DateTime   @default(now()) @map("created_at")
-  updatedAt        DateTime   @updatedAt @map("updated_at")
+  id                   Int        @id @default(autoincrement())
+  name                 String     @db.VarChar(200)
+  symbol               String     @db.VarChar(50)
+  assetType            AssetType  @map("asset_type")
+  quantity             Float
+  purchasePrice        Float      @map("purchase_price")
+  purchaseCurrency     String     @default("USD") @map("purchase_currency") @db.VarChar(10)
+  purchaseDate         DateTime?  @map("purchase_date")
+  purchaseExchangeRate Float?     @map("purchase_exchange_rate")
+  purityPercent        Float?     @map("purity_percent")
+  weightUnit           WeightUnit? @map("weight_unit")
+  valuationMode        ValuationMode @default(live) @map("valuation_mode")
+  currentValue         Float?     @map("current_value")
+  notes                String?    @db.VarChar(500)
+  createdAt            DateTime   @default(now()) @map("created_at")
+  updatedAt            DateTime   @updatedAt @map("updated_at")
 
   @@index([assetType])
   @@map("investments")
@@ -71,12 +79,13 @@ model PortfolioSnapshot {
 }
 
 model Watchlist {
-  id      Int      @id @default(autoincrement())
-  symbol  String   @db.VarChar(20)
-  name    String?  @db.VarChar(200)
-  addedAt DateTime @default(now()) @map("added_at")
+  id       Int               @id @default(autoincrement())
+  symbol   String            @db.VarChar(20)
+  name     String?           @db.VarChar(200)
+  category WatchlistCategory @default(options)
+  addedAt  DateTime          @default(now()) @map("added_at")
 
-  @@unique([symbol])
+  @@unique([symbol, category])
   @@map("watchlist")
 }
 

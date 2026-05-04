@@ -1,8 +1,16 @@
 import { streamText } from "ai";
 import { getAIModel } from "@/lib/ai-provider";
-import { buildFullSystemPrompt } from "@/lib/expert-prompts";
+import { buildFullSystemPrompt, type ExpertMode } from "@/lib/expert-prompts";
 import { prisma } from "@/lib/db";
 import { enrichInvestments } from "@/lib/enrich";
+
+const VALID_MODES: ExpertMode[] = ["options", "us-stocks", "crypto"];
+
+const MODE_TO_CATEGORY = {
+  options: "options",
+  "us-stocks": "us_stocks",
+  crypto: "crypto",
+} as const;
 
 function formatPortfolioContext(
   investments: Array<{
@@ -45,7 +53,7 @@ function formatWatchlistContext(
 
 export async function POST(req: Request) {
   try {
-    const { messages, includePortfolio } = await req.json();
+    const { messages, includePortfolio, mode } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "Messages are required" }), {
@@ -53,6 +61,10 @@ export async function POST(req: Request) {
         headers: { "Content-Type": "application/json" },
       });
     }
+
+    const expertMode: ExpertMode = VALID_MODES.includes(mode)
+      ? (mode as ExpertMode)
+      : "options";
 
     // Build context
     let portfolioContext: string | undefined;
@@ -65,11 +77,13 @@ export async function POST(req: Request) {
     }
 
     const watchlist = await prisma.watchlist.findMany({
+      where: { category: MODE_TO_CATEGORY[expertMode] },
       orderBy: { addedAt: "desc" },
     });
     const watchlistContext = formatWatchlistContext(watchlist);
 
     const systemPrompt = buildFullSystemPrompt(
+      expertMode,
       portfolioContext,
       watchlistContext || undefined
     );

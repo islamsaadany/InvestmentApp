@@ -1,18 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
 import { TextStreamChatTransport } from "ai";
 import { Send, Loader2, Trash2, BriefcaseBusiness } from "lucide-react";
 import MessageBubble from "./MessageBubble";
-import type { ExpertMode } from "@/lib/types";
 
-interface ChatInterfaceProps {
-  mode: ExpertMode;
-}
-
-const WELCOME_BY_MODE: Record<ExpertMode, string> = {
-  options: `⚠️ HALAL-OPT DISCLAIMER: I am an AI trading analysis agent. All output is for informational and educational purposes only — not financial advice. Options trading carries significant risk. You may lose the entire amount invested. Halal compliance should be independently verified. Consult a qualified financial advisor and Islamic scholar before trading.
+const WELCOME_MESSAGE = `⚠️ HALAL-OPT DISCLAIMER: I am an AI trading analysis agent. All output is for informational and educational purposes only — not financial advice. Options trading carries significant risk. You may lose the entire amount invested. Halal compliance should be independently verified. Consult a qualified financial advisor and Islamic scholar before trading.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -26,70 +20,24 @@ Welcome! I'm your Halal Options Trading Expert. I can help you with:
 Try asking me something like:
   "Analyze AAPL for options opportunities"
   "What's a good iron condor setup for MSFT?"
-  "Should I sell covered calls on my NVDA position?"`,
+  "Should I sell covered calls on my NVDA position?"`;
 
-  "us-stocks": `⚠️ HALAL-EQUITY DISCLAIMER: I am an AI investment analysis agent. All output is for informational and educational purposes only — not financial advice. Investing in stocks carries risk of loss. Halal compliance can change quarter-to-quarter and should be independently verified through Zoya, Musaffa, or your scholar. Consult a qualified financial advisor and Islamic scholar before investing.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Welcome! I'm your Halal US Stock Purchase Advisor. I can help you with:
-
-• Analyze any specific stock for buying (verdict + entry zone + target)
-• Suggest 3-5 Halal-compliant US stocks to buy now (Discover mode)
-• Evaluate stocks you already own (hold/add/trim/sell)
-• Factor in your portfolio for diversification and concentration checks
-
-Try asking me something like:
-  "Should I buy AAPL right now?"
-  "Suggest 3 Halal US stocks to buy this month"
-  "Is MSFT still a buy at this price?"`,
-
-  crypto: `⚠️ HALAL-CRYPTO DISCLAIMER: I am an AI cryptocurrency analysis agent. All output is for informational and educational purposes only — not financial advice. Cryptocurrency investing carries extreme risk including total loss of capital. Halal compliance for cryptocurrencies is contested among scholars and must be independently verified with your own qualified scholar. Consult a qualified financial advisor before investing.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Welcome! I'm your Halal Crypto Purchase Advisor. I can help you with:
-
-• Analyze any specific coin for buying (with scholarly Halal view)
-• Suggest 2-3 Halal-acceptable coins to buy now (Discover mode)
-• Evaluate coins you already hold (hold/add/trim/sell + custody review)
-• Factor in your portfolio for crypto allocation and tier balance
-
-Try asking me something like:
-  "Should I buy BTC at this price?"
-  "What Halal crypto should I DCA into right now?"
-  "Is ETH still acceptable from a Shariah perspective?"`,
-};
-
-const PLACEHOLDER_BY_MODE: Record<ExpertMode, string> = {
-  options: "Ask about any stock... e.g. 'Analyze AAPL for options'",
-  "us-stocks": "Ask about any stock... e.g. 'Should I buy AAPL?'",
-  crypto: "Ask about any coin... e.g. 'Should I buy BTC right now?'",
-};
-
-export default function ChatInterface({ mode }: ChatInterfaceProps) {
+export default function ChatInterface() {
   const [includePortfolio, setIncludePortfolio] = useState(true);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const welcomeMessage = WELCOME_BY_MODE[mode];
-
   const { messages, sendMessage, status, setMessages } = useChat({
-    id: `expert-chat-${mode}`,
-    transport: useMemo(
-      () =>
-        new TextStreamChatTransport({
-          api: "/api/expert/chat",
-          body: { includePortfolio, mode },
-        }),
-      [includePortfolio, mode]
-    ),
+    transport: new TextStreamChatTransport({
+      api: "/api/expert/chat",
+      body: { includePortfolio },
+    }),
     messages: [
       {
-        id: `welcome-${mode}`,
+        id: "welcome",
         role: "assistant" as const,
-        content: welcomeMessage,
-        parts: [{ type: "text" as const, text: welcomeMessage }],
+        content: WELCOME_MESSAGE,
+        parts: [{ type: "text" as const, text: WELCOME_MESSAGE }],
       },
     ],
   });
@@ -117,7 +65,7 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
   const handleClearChat = () => {
     setMessages([
       {
-        id: `cleared-${mode}`,
+        id: "cleared",
         role: "assistant",
         content: "Chat cleared. How can I help you?",
         parts: [{ type: "text", text: "Chat cleared. How can I help you?" }],
@@ -125,6 +73,7 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
     ]);
   };
 
+  // Extract text content from message parts or fallback to content
   const getMessageText = (msg: (typeof messages)[number]): string => {
     if (msg.parts && msg.parts.length > 0) {
       return msg.parts
@@ -195,7 +144,7 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={PLACEHOLDER_BY_MODE[mode]}
+            placeholder="Ask about any stock... e.g. 'Analyze AAPL for options'"
             rows={1}
             className="flex-1 resize-none border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-h-32"
             style={{ minHeight: "44px" }}

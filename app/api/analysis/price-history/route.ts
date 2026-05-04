@@ -5,6 +5,8 @@ const PERIOD_DAYS: Record<string, number> = {
   "7d": 7,
   "30d": 30,
   "90d": 90,
+  "3m": 90,
+  "6m": 180,
   "1y": 365,
 };
 
