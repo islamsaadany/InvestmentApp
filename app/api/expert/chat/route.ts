@@ -12,6 +12,32 @@ const MODE_TO_CATEGORY = {
   crypto: "crypto",
 } as const;
 
+const PROVIDER_TO_KEY: Record<string, string> = {
+  anthropic: "ANTHROPIC_API_KEY",
+  google: "GOOGLE_GENERATIVE_AI_API_KEY",
+  openai: "OPENAI_API_KEY",
+};
+
+function jsonError(message: string, status: number): Response {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+function explainProviderError(raw: string): string {
+  if (/api[_\s-]?key|unauthor|401|403/i.test(raw)) {
+    return `AI provider rejected the API key. Verify the key is valid and the Gemini API is enabled on the Google Cloud project that owns it. Underlying error: ${raw}`;
+  }
+  if (/429|rate.?limit|quota|exceed/i.test(raw)) {
+    return `Rate limit hit on AI provider. Wait a moment and retry. Underlying error: ${raw}`;
+  }
+  if (/timeout|timed out|deadline/i.test(raw)) {
+    return `AI provider timed out. The model may be overloaded — retry, or set AI_MODEL to a faster model (e.g. gemini-2.0-flash). Underlying error: ${raw}`;
+  }
+  return raw;
+}
+
 function formatPortfolioContext(
   investments: Array<{
     name: string;
@@ -53,13 +79,27 @@ function formatWatchlistContext(
 
 export async function POST(req: Request) {
   try {
+    // Precheck: required AI provider key must be set. Surface a specific,
+    // actionable message instead of letting the SDK throw a generic auth error.
+    const provider = process.env.AI_PROVIDER || "anthropic";
+    const requiredKey = PROVIDER_TO_KEY[provider];
+    if (!requiredKey) {
+      return jsonError(
+        `Unsupported AI_PROVIDER "${provider}". Set AI_PROVIDER to one of: ${Object.keys(PROVIDER_TO_KEY).join(", ")}.`,
+        503
+      );
+    }
+    if (!process.env[requiredKey]) {
+      return jsonError(
+        `AI not configured: ${requiredKey} is not set. Add it in Vercel → Project → Settings → Environment Variables (Production, Preview, and Development), then redeploy.`,
+        503
+      );
+    }
+
     const { messages, includePortfolio, mode } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return new Response(JSON.stringify({ error: "Messages are required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return jsonError("Messages are required", 400);
     }
 
     const expertMode: ExpertMode = VALID_MODES.includes(mode)
@@ -102,11 +142,8 @@ export async function POST(req: Request) {
     return result.toTextStreamResponse();
   } catch (error: unknown) {
     console.error("Expert chat error:", error);
-    const message =
+    const raw =
       error instanceof Error ? error.message : "Internal server error";
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonError(explainProviderError(raw), 500);
   }
 }

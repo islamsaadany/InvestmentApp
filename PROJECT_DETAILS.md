@@ -457,6 +457,15 @@ Each tab shares: streaming chat UI, portfolio context toggle, scholarly Halal sc
 
 **Note on KBs:** As of 2026-05-04, the full deep-research KBs are active for all three tabs. The interim placeholder files (`us-stocks-kb.txt`, `crypto-kb.txt`) have been removed; `lib/expert-prompts.ts` now loads the full `.md` knowledge base files directly.
 
+**Chat persistence & resilience (2026-05-04):**
+- **Per-mode localStorage history** — Each Expert mode (Options / US Stocks / Crypto) keeps its own chat history in `localStorage` under `expert-chat-{mode}-v1`. Survives page navigation, reload, and tab switches within the Expert page. Only cleared by the explicit "Clear" button.
+- **All three chat panes stay mounted** — `app/(app)/expert/page.tsx` renders all three `ChatInterface` instances and toggles visibility via CSS (`hidden`/`flex`). Switching tabs no longer aborts an in-flight stream.
+- **Welcome message as empty-state** — Welcome only shows when the user has not yet sent a message in that mode. Once a real exchange exists, welcome is hidden.
+- **Improved typing indicator** — Three bouncing purple dots inside an assistant bubble while the request is submitted but no tokens have arrived yet; hands off to streaming text as soon as the first chunk lands.
+- **Inline error banner with retry** — Failed requests show a red error card with an actionable hint (e.g., "API key rejected — verify GOOGLE_GENERATIVE_AI_API_KEY") and a "Retry last message" button instead of an empty assistant bubble.
+- **Server-side error enrichment** — `app/api/expert/chat/route.ts` now prechecks that the active provider's API key is set and returns a 503 with a clear setup message if missing. Provider auth/rate-limit/timeout errors are translated into actionable hints before being returned to the client.
+- **Background generation across page navigation** — Not implemented (deferred). When the user leaves `/expert` entirely, the in-flight stream aborts; partial tokens are preserved in localStorage so the user can retry. See FUTURE_FEATURES.md for the planned server-side stream-relay solution.
+
 **Dependencies added:**
 - `ai` (Vercel AI SDK core)
 - `@ai-sdk/react` (React hooks)

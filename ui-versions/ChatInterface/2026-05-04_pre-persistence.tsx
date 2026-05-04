@@ -1,25 +1,15 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
 import { TextStreamChatTransport } from "ai";
-import {
-  Send,
-  Loader2,
-  Trash2,
-  BriefcaseBusiness,
-  AlertCircle,
-  RefreshCw,
-} from "lucide-react";
+import { Send, Loader2, Trash2, BriefcaseBusiness } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 import type { ExpertMode } from "@/lib/types";
 
 interface ChatInterfaceProps {
   mode: ExpertMode;
 }
-
-const STORAGE_VERSION = "v1";
-const storageKey = (mode: ExpertMode) => `expert-chat-${mode}-${STORAGE_VERSION}`;
 
 const WELCOME_BY_MODE: Record<ExpertMode, string> = {
   options: `⚠️ HALAL-OPT DISCLAIMER: I am an AI trading analysis agent. All output is for informational and educational purposes only — not financial advice. Options trading carries significant risk. You may lose the entire amount invested. Halal compliance should be independently verified. Consult a qualified financial advisor and Islamic scholar before trading.
@@ -77,35 +67,14 @@ const PLACEHOLDER_BY_MODE: Record<ExpertMode, string> = {
   crypto: "Ask about any coin... e.g. 'Should I buy BTC right now?'",
 };
 
-// Map raw error text to a user-actionable hint. Server already enriches most
-// cases (see app/api/expert/chat/route.ts), but we keep this fallback for
-// network errors and provider errors that bubble up through the stream.
-function explainError(message: string): string {
-  const m = message || "Unknown error";
-  if (/api[_\s-]?key|unauthor|401|403/i.test(m)) {
-    return "AI provider rejected the API key. Check that GOOGLE_GENERATIVE_AI_API_KEY is set in Vercel env vars and the deployment was redeployed after adding it.";
-  }
-  if (/429|rate.?limit|quota|exceed/i.test(m)) {
-    return "Rate limit hit on the AI provider. Wait a moment and try again.";
-  }
-  if (/network|fetch|failed to connect|enotfound|econnrefused/i.test(m)) {
-    return "Network error reaching the AI provider. Check your connection and retry.";
-  }
-  if (/not configured|missing/i.test(m)) {
-    return m;
-  }
-  return `Something went wrong: ${m}`;
-}
-
 export default function ChatInterface({ mode }: ChatInterfaceProps) {
   const [includePortfolio, setIncludePortfolio] = useState(true);
   const [input, setInput] = useState("");
-  const [hydrated, setHydrated] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const welcomeMessage = WELCOME_BY_MODE[mode];
 
-  const { messages, sendMessage, status, setMessages, error } = useChat({
+  const { messages, sendMessage, status, setMessages } = useChat({
     id: `expert-chat-${mode}`,
     transport: useMemo(
       () =>
@@ -115,65 +84,21 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
         }),
       [includePortfolio, mode]
     ),
+    messages: [
+      {
+        id: `welcome-${mode}`,
+        role: "assistant" as const,
+        content: welcomeMessage,
+        parts: [{ type: "text" as const, text: welcomeMessage }],
+      },
+    ],
   });
 
-  // Hydrate from localStorage on mount (client-only; avoids SSR mismatch).
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = window.localStorage.getItem(storageKey(mode));
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setMessages(parsed);
-        }
-      }
-    } catch {
-      // Corrupted entry — ignore and start fresh.
-    }
-    setHydrated(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Persist messages to localStorage on every change once hydrated.
-  // Streams that get interrupted (component unmount mid-stream) save up to the
-  // last received chunk, so partial answers survive page navigation.
-  useEffect(() => {
-    if (!hydrated) return;
-    if (typeof window === "undefined") return;
-    try {
-      if (messages.length === 0) {
-        window.localStorage.removeItem(storageKey(mode));
-      } else {
-        window.localStorage.setItem(storageKey(mode), JSON.stringify(messages));
-      }
-    } catch {
-      // Quota exceeded or storage disabled — silently drop.
-    }
-  }, [messages, mode, hydrated]);
-
-  const isSubmitting = status === "submitted";
-  const isStreaming = status === "streaming";
-  const isLoading = isSubmitting || isStreaming;
+  const isLoading = status === "submitted" || status === "streaming";
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading]);
-
-  const getMessageText = useCallback(
-    (msg: (typeof messages)[number]): string => {
-      if (msg.parts && msg.parts.length > 0) {
-        return msg.parts
-          .filter(
-            (p): p is { type: "text"; text: string } => p.type === "text"
-          )
-          .map((p) => p.text)
-          .join("");
-      }
-      return msg.content;
-    },
-    []
-  );
+  }, [messages]);
 
   const handleSend = () => {
     const trimmed = input.trim();
@@ -190,42 +115,25 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
   };
 
   const handleClearChat = () => {
-    setMessages([]);
-    if (typeof window !== "undefined") {
-      try {
-        window.localStorage.removeItem(storageKey(mode));
-      } catch {
-        // ignore
-      }
+    setMessages([
+      {
+        id: `cleared-${mode}`,
+        role: "assistant",
+        content: "Chat cleared. How can I help you?",
+        parts: [{ type: "text", text: "Chat cleared. How can I help you?" }],
+      },
+    ]);
+  };
+
+  const getMessageText = (msg: (typeof messages)[number]): string => {
+    if (msg.parts && msg.parts.length > 0) {
+      return msg.parts
+        .filter((p): p is { type: "text"; text: string } => p.type === "text")
+        .map((p) => p.text)
+        .join("");
     }
+    return msg.content;
   };
-
-  const handleRetry = () => {
-    if (isLoading) return;
-    // Find the most recent user message and replay it. If the failed assistant
-    // turn is still present (empty/partial), drop it first so we don't
-    // accumulate broken bubbles.
-    const lastUserIdx = [...messages]
-      .reverse()
-      .findIndex((m) => m.role === "user");
-    if (lastUserIdx === -1) return;
-    const realIdx = messages.length - 1 - lastUserIdx;
-    const lastUserMsg = messages[realIdx];
-    const trimmedHistory = messages.slice(0, realIdx);
-    setMessages(trimmedHistory);
-    sendMessage({ text: getMessageText(lastUserMsg) });
-  };
-
-  // Hide the empty assistant placeholder bubble that useChat creates while a
-  // request is in flight before any tokens arrive. The typing indicator covers
-  // that period instead.
-  const visibleMessages = messages.filter((msg) => {
-    if (msg.role !== "assistant") return true;
-    return getMessageText(msg).length > 0;
-  });
-
-  const hasInteracted = messages.some((m) => m.role === "user");
-  const showWelcome = !hasInteracted;
 
   return (
     <div className="flex-1 flex flex-col h-full">
@@ -255,77 +163,28 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-        {showWelcome && (
-          <MessageBubble role="assistant" content={welcomeMessage} />
-        )}
-
-        {visibleMessages.map((msg) => (
+        {messages.map((msg) => (
           <MessageBubble
             key={msg.id}
             role={msg.role as "user" | "assistant"}
             content={getMessageText(msg)}
           />
         ))}
-
-        {/* Typing indicator: shown while the request is in flight but no
-            assistant tokens have arrived yet. Streaming tokens take over once
-            they start coming in (visibleMessages will include the assistant
-            bubble as soon as it has text). */}
         {isLoading &&
-          !visibleMessages.some(
-            (m, idx) =>
-              m.role === "assistant" && idx === visibleMessages.length - 1
-          ) && (
+          messages.length > 0 &&
+          (messages[messages.length - 1] as { role: string })?.role === "user" && (
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
                 <Loader2 className="w-4 h-4 text-purple-600 animate-spin" />
               </div>
               <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
-                <div className="flex items-center gap-1">
-                  <span
-                    className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"
-                    style={{ animationDelay: "0ms" }}
-                  />
-                  <span
-                    className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"
-                    style={{ animationDelay: "150ms" }}
-                  />
-                  <span
-                    className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"
-                    style={{ animationDelay: "300ms" }}
-                  />
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <span>Analyzing</span>
+                  <span className="animate-pulse">...</span>
                 </div>
               </div>
             </div>
           )}
-
-        {/* Error banner: surfaces failed requests with an actionable hint and
-            a retry button. */}
-        {error && !isLoading && (
-          <div className="flex gap-3">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-              <AlertCircle className="w-4 h-4 text-red-600" />
-            </div>
-            <div className="flex-1 max-w-[80%] bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
-              <div className="text-sm font-semibold text-red-800 mb-1">
-                Couldn&apos;t reach the AI agent
-              </div>
-              <div className="text-sm text-red-700 whitespace-pre-wrap">
-                {explainError(error.message)}
-              </div>
-              {hasInteracted && (
-                <button
-                  onClick={handleRetry}
-                  className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  Retry last message
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
         <div ref={messagesEndRef} />
       </div>
 
