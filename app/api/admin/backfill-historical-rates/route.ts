@@ -2,18 +2,19 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
 /**
- * Free historical USD/EGP rates via fawazahmed0/exchange-api on jsDelivr.
+ * Free historical USD/EGP rates via fawazahmed0/exchange-api.
  * No API key. Covers EGP back to early 2024.
  */
-const RATE_API_BASE = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api";
-const RATE_API_FALLBACK = "https://latest.currency-api.pages.dev";
+function buildUrls(date: string): string[] {
+  return [
+    `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@${date}/v1/currencies/usd.json`,
+    `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@${date}/v1/currencies/usd.min.json`,
+    `https://${date}.currency-api.pages.dev/v1/currencies/usd.json`,
+  ];
+}
 
 async function fetchRateForDate(date: string): Promise<number | null> {
-  const urls = [
-    `${RATE_API_BASE}@${date}/v1/currencies/usd.json`,
-    `${RATE_API_FALLBACK}/v1/currencies/usd.json`,
-  ];
-  for (const url of urls) {
+  for (const url of buildUrls(date)) {
     try {
       const res = await fetch(url);
       if (!res.ok) continue;
@@ -32,10 +33,7 @@ async function fetchRateForDate(date: string): Promise<number | null> {
  *
  * One-time job: for every investment purchased in EGP with no stored
  * purchaseExchangeRate, fetch the historical USD→EGP rate for its
- * purchase date and persist it.
- *
- * Idempotent — re-hitting after backfill completes does nothing because
- * all rows already have a stored rate.
+ * purchase date and persist it. Idempotent.
  */
 export async function GET() {
   const candidates = await prisma.investment.findMany({

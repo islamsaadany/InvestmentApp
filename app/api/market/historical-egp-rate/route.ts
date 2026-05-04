@@ -1,23 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 
 /**
- * Free historical USD/EGP rates via fawazahmed0/exchange-api on jsDelivr.
+ * Free historical USD/EGP rates via fawazahmed0/exchange-api.
  * No API key. Covers EGP back to early 2024.
  *
- * Format: https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@<date>/v1/currencies/usd.json
+ * Multiple URL forms tried in order — date is YYYY-MM-DD:
+ *   1. https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@<date>/v1/currencies/usd.json
+ *   2. https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@<date>/v1/currencies/usd.min.json
+ *   3. https://<date>.currency-api.pages.dev/v1/currencies/usd.json
  */
-const RATE_API_BASE = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api";
-const RATE_API_FALLBACK = "https://latest.currency-api.pages.dev";
+function buildUrls(date: string): string[] {
+  return [
+    `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@${date}/v1/currencies/usd.json`,
+    `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@${date}/v1/currencies/usd.min.json`,
+    `https://${date}.currency-api.pages.dev/v1/currencies/usd.json`,
+  ];
+}
 
 const cache = new Map<string, { rate: number; cachedAt: number }>();
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 async function fetchRateForDate(date: string): Promise<number | null> {
-  const urls = [
-    `${RATE_API_BASE}@${date}/v1/currencies/usd.json`,
-    `${RATE_API_FALLBACK}/v1/currencies/usd.json`,
-  ];
-  for (const url of urls) {
+  for (const url of buildUrls(date)) {
     try {
       const res = await fetch(url);
       if (!res.ok) continue;
@@ -55,7 +59,7 @@ export async function GET(req: NextRequest) {
   const rate = await fetchRateForDate(queryDate);
   if (rate == null) {
     return NextResponse.json(
-      { error: "Could not fetch historical EGP rate for that date" },
+      { error: "Could not fetch historical EGP rate for that date — try a slightly different date or enter manually" },
       { status: 502 }
     );
   }
