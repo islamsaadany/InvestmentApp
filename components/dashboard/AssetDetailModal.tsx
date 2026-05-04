@@ -162,7 +162,9 @@ export default function AssetDetailModal({
 
   const showDrilldown = symbolsForType.length > 1;
 
-  // Fetch price + value history for the current selection
+  // Fetch FULL price history (all time) once per asset/symbol selection.
+  // We always fetch all-time so that purchase markers and stats are invariant
+  // to the user's chosen display range — only the visible chart line zooms.
   useEffect(() => {
     let cancelled = false;
     async function fetchData() {
@@ -185,13 +187,13 @@ export default function AssetDetailModal({
         requests.push(
           symbols.length > 0
             ? fetch(
-                `/api/analysis/price-history?symbols=${symbols.join(",")}&period=${period}`
+                `/api/analysis/price-history?symbols=${symbols.join(",")}&period=all`
               )
             : Promise.resolve(new Response("[]"))
         );
         requests.push(
           fetch(
-            `/api/analysis/value-history?assetType=${activeAssetType}&period=${period}`
+            `/api/analysis/value-history?assetType=${activeAssetType}&period=all`
           )
         );
 
@@ -215,10 +217,12 @@ export default function AssetDetailModal({
     return () => {
       cancelled = true;
     };
-  }, [activeAssetType, activeSymbol, storeSymbolMap, symbolsForType, period]);
+  }, [activeAssetType, activeSymbol, storeSymbolMap, symbolsForType]);
 
-  // Aggregate price history into one series (avg if multiple symbols same day)
-  const priceChartData = useMemo(() => {
+  // FULL price history (all time) aggregated into one series (avg if multiple
+  // symbols same day). Used for purchase-marker lookup and stats — never
+  // displayed directly. Always invariant to the user's selected display range.
+  const fullPriceHistory = useMemo(() => {
     const acc: { dateLabel: string; rawDate: string; price: number; prices: number[] }[] = [];
     for (const p of data?.priceHistory || []) {
       const existing = acc.find((a) => a.rawDate === p.date);
@@ -230,19 +234,42 @@ export default function AssetDetailModal({
         const dateLabel = new Date(p.date).toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
-          year: period === "1y" || period === "all" ? "2-digit" : undefined,
+          year: "2-digit",
         });
         acc.push({ dateLabel, rawDate: p.date, price: p.priceUsd, prices: [p.priceUsd] });
       }
     }
     acc.sort((a, b) => a.rawDate.localeCompare(b.rawDate));
+    return acc;
+  }, [data?.priceHistory]);
+
+  // Display-window slice of the full history. Filtered by selected period and
+  // optionally down-sampled to weekly when too many points.
+  const priceChartData = useMemo(() => {
+    let windowed = fullPriceHistory;
+    const days = PERIOD_DAYS_MAP[period];
+    if (days != null) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - days);
+      const cutoffStr = cutoff.toISOString().split("T")[0];
+      windowed = fullPriceHistory.filter((d) => d.rawDate >= cutoffStr);
+    }
+    // Re-format date label depending on whether year should be shown
+    const showYear = period === "1y" || period === "all";
+    windowed = windowed.map((d) => ({
+      ...d,
+      dateLabel: new Date(d.rawDate).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: showYear ? "2-digit" : undefined,
+      }),
+    }));
 
     // Downsample to weekly average if too many points
-    if (acc.length > DOWNSAMPLE_THRESHOLD) {
+    if (windowed.length > DOWNSAMPLE_THRESHOLD) {
       const weeks = new Map<string, { dateLabel: string; rawDate: string; sum: number; count: number }>();
-      for (const point of acc) {
+      for (const point of windowed) {
         const d = new Date(point.rawDate);
-        // Bucket by ISO week (year + week number)
         const yearStart = new Date(d.getFullYear(), 0, 1);
         const weekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + yearStart.getDay() + 1) / 7);
         const key = `${d.getFullYear()}-W${weekNum}`;
@@ -265,17 +292,24 @@ export default function AssetDetailModal({
           dateLabel: w.dateLabel,
           rawDate: w.rawDate,
           price: w.sum / w.count,
-          prices: [],
+          prices: [] as number[],
         }));
     }
-    return acc;
-  }, [data?.priceHistory, period]);
+    return windowed;
+  }, [fullPriceHistory, period]);
 
   // Value chart data — for aggregate view use the API data; for symbol drill-down,
-  // synthesize from price × quantity (post-purchase only)
+  // synthesize from price × quantity (post-purchase only). Filtered by selected period.
   const valueChartData = useMemo(() => {
+    const days = PERIOD_DAYS_MAP[period];
+    let cutoffStr: string | null = null;
+    if (days != null) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - days);
+      cutoffStr = cutoff.toISOString().split("T")[0];
+    }
     if (!activeSymbol) {
-      return (data?.valueHistory || []).map((v) => ({
+      const all = (data?.valueHistory || []).map((v) => ({
         dateLabel: new Date(v.date).toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
@@ -283,6 +317,7 @@ export default function AssetDetailModal({
         rawDate: v.date,
         value: currency === "EGP" ? v.valueEgp : v.valueUsd,
       }));
+      return cutoffStr ? all.filter((d) => d.rawDate >= cutoffStr!) : all;
     }
     if (selectedInvestments.length === 0) return [];
     const earliestPurchase = selectedInvestments
@@ -312,10 +347,11 @@ export default function AssetDetailModal({
       });
   }, [activeSymbol, data?.valueHistory, currency, priceChartData, selectedInvestments, egpRate]);
 
-  // Purchase markers — Y position is the asset's MARKET PRICE on the purchase
-  // date (i.e., the dot sits on the yellow chart line at the date of purchase).
-  // What the user actually paid is shown by the avg-cost and lowest-cost reference
-  // lines — those are separate concepts.
+  // Purchase markers — Y position is the asset's MARKET PRICE on the actual
+  // purchase date (looked up from the FULL price history, never from the
+  // windowed data — so dot Y values stay invariant when the user changes the
+  // display range). The X position is the displayed date label, snapped to the
+  // leftmost visible tick when the purchase pre-dates the window.
   const purchaseMarkers = useMemo(() => {
     const earliestVisibleDate = priceChartData[0]?.rawDate;
     return selectedInvestments
@@ -325,29 +361,25 @@ export default function AssetDetailModal({
         const outsideWindow =
           earliestVisibleDate != null && dateStr < earliestVisibleDate;
 
-        // Find the market price on the purchase date (or closest available)
+        // Look up the actual market price on the purchase date from the full
+        // history (closest day, in case of weekend/holiday gaps).
         let marketPriceOnDate: number | null = null;
-        if (outsideWindow) {
-          // Snap to leftmost edge — use the first available market price
-          marketPriceOnDate = priceChartData[0]?.price ?? null;
-        } else {
-          let exact = priceChartData.find((d) => d.rawDate === dateStr);
-          if (!exact) {
-            // Pick the nearest date in the visible window
-            let nearest = priceChartData[0];
-            let minDiff = Infinity;
-            for (const d of priceChartData) {
-              const diff = Math.abs(
-                new Date(d.rawDate).getTime() - new Date(dateStr).getTime()
-              );
-              if (diff < minDiff) {
-                minDiff = diff;
-                nearest = d;
-              }
+        const exact = fullPriceHistory.find((d) => d.rawDate === dateStr);
+        if (exact) {
+          marketPriceOnDate = exact.price;
+        } else if (fullPriceHistory.length > 0) {
+          let nearest = fullPriceHistory[0];
+          let minDiff = Infinity;
+          for (const d of fullPriceHistory) {
+            const diff = Math.abs(
+              new Date(d.rawDate).getTime() - new Date(dateStr).getTime()
+            );
+            if (diff < minDiff) {
+              minDiff = diff;
+              nearest = d;
             }
-            exact = nearest;
           }
-          marketPriceOnDate = exact?.price ?? null;
+          marketPriceOnDate = nearest.price;
         }
 
         return {
@@ -363,7 +395,7 @@ export default function AssetDetailModal({
         };
       })
       .filter((m): m is typeof m & { yValue: number } => m.yValue != null);
-  }, [selectedInvestments, priceChartData]);
+  }, [selectedInvestments, fullPriceHistory, priceChartData]);
 
   const outsideWindowCount = useMemo(
     () => purchaseMarkers.filter((m) => m.outsideWindow).length,
