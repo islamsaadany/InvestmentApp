@@ -1,28 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
 const FRANKFURTER_BASE = "https://api.frankfurter.app";
 
 /**
- * POST /api/admin/backfill-historical-rates
+ * GET /api/admin/backfill-historical-rates
  *
- * One-shot job: for every investment that was purchased in EGP and has no
- * stored purchaseExchangeRate, fetch the historical USD→EGP rate from
- * Frankfurter for its purchase date and persist it.
+ * One-time job: for every investment purchased in EGP with no stored
+ * purchaseExchangeRate, fetch the historical USD→EGP rate from Frankfurter
+ * for its purchase date and persist it.
  *
- * Returns a summary of how many rows were updated, skipped, and failed.
+ * Idempotent — re-hitting after backfill completes does nothing because
+ * all rows already have a stored rate.
  *
- * Body (optional): { dryRun?: boolean }  — when true, fetches rates but does not write
+ * Visit this URL once in a browser after deploy. Returns a JSON summary.
  */
-export async function POST(req: NextRequest) {
-  let dryRun = false;
-  try {
-    const body = await req.json().catch(() => ({}));
-    dryRun = !!body?.dryRun;
-  } catch {
-    // ignore
-  }
-
+export async function GET() {
   const candidates = await prisma.investment.findMany({
     where: {
       purchaseCurrency: "EGP",
@@ -33,28 +26,20 @@ export async function POST(req: NextRequest) {
 
   if (candidates.length === 0) {
     return NextResponse.json({
+      message: "Nothing to backfill — all EGP investments already have a stored rate.",
       total: 0,
       updated: 0,
-      skipped: 0,
       failed: 0,
-      details: [],
-      dryRun,
     });
   }
 
   const todayStr = new Date().toISOString().split("T")[0];
   let updated = 0;
-  let skipped = 0;
   let failed = 0;
   const details: Array<{ id: number; date: string; rate?: number; error?: string }> = [];
 
   for (const inv of candidates) {
     const sourceDate = inv.purchaseDate || inv.createdAt;
-    if (!sourceDate) {
-      skipped++;
-      details.push({ id: inv.id, date: "—", error: "no purchase date" });
-      continue;
-    }
     let dateStr = new Date(sourceDate).toISOString().split("T")[0];
     if (dateStr > todayStr) dateStr = todayStr;
 
@@ -73,12 +58,10 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      if (!dryRun) {
-        await prisma.investment.update({
-          where: { id: inv.id },
-          data: { purchaseExchangeRate: rate },
-        });
-      }
+      await prisma.investment.update({
+        where: { id: inv.id },
+        data: { purchaseExchangeRate: rate },
+      });
       updated++;
       details.push({ id: inv.id, date: dateStr, rate });
     } catch (err: unknown) {
@@ -92,11 +75,10 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({
+    message: `Backfilled ${updated} of ${candidates.length} investments. ${failed > 0 ? `${failed} failed — see details.` : "All good."}`,
     total: candidates.length,
     updated,
-    skipped,
     failed,
-    dryRun,
     details,
   });
 }
