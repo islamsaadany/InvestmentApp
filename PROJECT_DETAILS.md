@@ -562,4 +562,58 @@ The modal that opens when clicking a pie-chart slice or summary-table row was re
 
 ---
 
-*Last Updated: May 4, 2026 — Added Average Down Analyzer + redesigned Asset Detail Modal (chart fixes + tabs + drill-down)*
+## 17. Historical EGP rate + metal purity per investment
+
+**Added:** May 4, 2026
+
+To make P&L, avg-cost, and chart purchase markers accurate, every investment can now store the **exchange rate at purchase time** and the **metal purity** (gold karat / silver fineness). Without these, the system falls back to current EGP rate and assumes pure-grade metal — which makes purchase dots drift below the spot price line on the asset detail chart.
+
+**Schema additions to `Investment`:**
+| Field | Type | Notes |
+|---|---|---|
+| `purchaseExchangeRate` | Float? | EGP per USD on the purchase day; null = use current rate |
+| `purityPercent` | Float? | 0-100 (24K=100, 21K=87.5, 925=92.5); null = treat as pure |
+
+Migration: `prisma/migrations/20260504_add_purchase_rate_purity/migration.sql`. Both columns are nullable so existing rows continue working unchanged.
+
+**Conversion logic updated:**
+- `lib/chart-helpers.ts` — uses stored `purchaseExchangeRate` when present, falls back to `egpRate` arg; divides by `purityPercent / 100` so 21K-gold dots line up with 24K spot price.
+- `lib/enrich.ts` — same logic applied to P&L computation. Quantity is also adjusted by purity for value calculations.
+- `app/api/analysis/value-history/route.ts` — applies purity in portfolio-value-over-time calculation.
+
+**Investment form (`components/investments/InvestmentForm.tsx`):**
+- New **Karat / Fineness dropdown** for gold (24K / 22K / 21K / 18K / 14K) and silver (.999 / .925 / .916 / .800).
+- New **"Exchange rate at purchase"** field, only shown when purchase currency is EGP. Includes an **Auto-fill** button that fetches the historical USD/EGP rate from Frankfurter for the selected purchase date.
+
+**New API endpoints:**
+| Route | Purpose |
+|---|---|
+| `GET /api/market/historical-egp-rate?date=YYYY-MM-DD` | Returns historical USD/EGP rate via Frankfurter (free, ECB-based). Cached 24h. |
+| `POST /api/admin/backfill-historical-rates` | One-shot job: walks every EGP-denominated investment with no stored rate, fetches Frankfurter rate for its purchase date, persists it. Body `{dryRun: true}` for a no-write preview. |
+
+**To backfill existing investments after applying the migration:**
+```bash
+curl -X POST https://your-app.vercel.app/api/admin/backfill-historical-rates \
+  -H "Content-Type: application/json" \
+  -d '{"dryRun": true}'   # preview first
+```
+
+**Caveat:** Frankfurter uses ECB/official rates. If you transacted at a parallel-market rate (Egyptian black market in early 2024 was significantly different), the auto-filled rate will be off — manually edit the field after the form fetches it.
+
+---
+
+## 18. Asset Detail Modal — Date range selector + pre-window snap + downsampling
+
+**Added:** May 4, 2026
+
+**Date range selector:** above the chart, choose **90D / 3M / 6M / 1Y / All** (default 90D). The selector controls the price-history fetch window. "All" fetches all stored history.
+
+**Pre-window snap with label:** Purchase markers whose date falls before the chart's leftmost visible date are **snapped to the leftmost edge** and rendered with a small amber color + a tiny date label (e.g. `← Nov 25`) so it's clear the dot was pulled in. They no longer pretend to be in-window.
+
+**Downsampling:** When the chart would have more than `DOWNSAMPLE_THRESHOLD` (180) points (e.g. selecting "All" on a portfolio with daily history going back years), the chart **down-samples to weekly averages** to keep rendering responsive. Below the threshold the daily resolution is preserved.
+
+**Updated period support:** `app/api/analysis/price-history/route.ts` and `app/api/analysis/value-history/route.ts` now accept `3m`, `6m`, `1y`, and `all` periods (in addition to existing `7d`, `30d`, `90d`).
+
+---
+
+*Last Updated: May 4, 2026 — Added Historical EGP rate + metal purity tracking + chart range selector*

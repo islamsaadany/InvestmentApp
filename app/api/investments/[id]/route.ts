@@ -39,6 +39,18 @@ export async function PUT(
     if (body.purchasePrice !== undefined) data.purchasePrice = body.purchasePrice;
     if (body.purchaseCurrency !== undefined) data.purchaseCurrency = body.purchaseCurrency;
     if (body.purchaseDate !== undefined) data.purchaseDate = body.purchaseDate ? new Date(body.purchaseDate) : null;
+    if (body.purchaseExchangeRate !== undefined) {
+      data.purchaseExchangeRate =
+        body.purchaseExchangeRate != null && body.purchaseExchangeRate > 0
+          ? body.purchaseExchangeRate
+          : null;
+    }
+    if (body.purityPercent !== undefined) {
+      data.purityPercent =
+        body.purityPercent != null && body.purityPercent > 0
+          ? body.purityPercent
+          : null;
+    }
     if (body.weightUnit !== undefined) data.weightUnit = body.weightUnit;
     if (body.valuationMode !== undefined) data.valuationMode = body.valuationMode;
     if (body.currentValue !== undefined) data.currentValue = body.currentValue;

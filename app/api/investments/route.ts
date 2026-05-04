@@ -38,6 +38,14 @@ export async function POST(req: NextRequest) {
         purchasePrice: body.purchasePrice,
         purchaseCurrency: body.purchaseCurrency || "USD",
         purchaseDate: body.purchaseDate ? new Date(body.purchaseDate) : null,
+        purchaseExchangeRate:
+          body.purchaseExchangeRate != null && body.purchaseExchangeRate > 0
+            ? body.purchaseExchangeRate
+            : null,
+        purityPercent:
+          body.purityPercent != null && body.purityPercent > 0
+            ? body.purityPercent
+            : null,
         weightUnit: body.weightUnit || null,
         valuationMode: body.valuationMode || "live",
         currentValue: body.currentValue ?? null,

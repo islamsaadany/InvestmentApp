@@ -47,26 +47,6 @@ interface AssetDetailModalProps {
 }
 
 type ChartTab = "price" | "value";
-type ChartPeriod = "90d" | "3m" | "6m" | "1y" | "all";
-
-const PERIOD_OPTIONS: Array<{ key: ChartPeriod; label: string }> = [
-  { key: "90d", label: "90D" },
-  { key: "3m", label: "3M" },
-  { key: "6m", label: "6M" },
-  { key: "1y", label: "1Y" },
-  { key: "all", label: "All" },
-];
-
-const PERIOD_DAYS_MAP: Record<ChartPeriod, number | null> = {
-  "90d": 90,
-  "3m": 90,
-  "6m": 180,
-  "1y": 365,
-  all: null,
-};
-
-// If chart would have more points than this, down-sample by week
-const DOWNSAMPLE_THRESHOLD = 180;
 
 interface PricePoint {
   date: string;
@@ -99,7 +79,6 @@ export default function AssetDetailModal({
   const [activeAssetType, setActiveAssetType] = useState(initialAssetType);
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
   const [tab, setTab] = useState<ChartTab>("price");
-  const [period, setPeriod] = useState<ChartPeriod>("90d");
   const [visible, setVisible] = useState<VisibleLayers>({
     dots: true,
     avg: true,
@@ -189,13 +168,13 @@ export default function AssetDetailModal({
         requests.push(
           symbols.length > 0
             ? fetch(
-                `/api/analysis/price-history?symbols=${symbols.join(",")}&period=${period}`
+                `/api/analysis/price-history?symbols=${symbols.join(",")}&period=90d`
               )
             : Promise.resolve(new Response("[]"))
         );
         requests.push(
           fetch(
-            `/api/analysis/value-history?assetType=${activeAssetType}&period=${period}`
+            `/api/analysis/value-history?assetType=${activeAssetType}&period=90d`
           )
         );
 
@@ -219,61 +198,27 @@ export default function AssetDetailModal({
     return () => {
       cancelled = true;
     };
-  }, [activeAssetType, activeSymbol, storeSymbolMap, symbolsForType, period]);
+  }, [activeAssetType, activeSymbol, storeSymbolMap, symbolsForType]);
 
   // Aggregate price history into one series (avg if multiple symbols same day)
   const priceChartData = useMemo(() => {
     const acc: { dateLabel: string; rawDate: string; price: number; prices: number[] }[] = [];
     for (const p of data?.priceHistory || []) {
-      const existing = acc.find((a) => a.rawDate === p.date);
+      const dateLabel = new Date(p.date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+      const existing = acc.find((a) => a.dateLabel === dateLabel);
       if (existing) {
         existing.prices.push(p.priceUsd);
         existing.price =
           existing.prices.reduce((s, v) => s + v, 0) / existing.prices.length;
       } else {
-        const dateLabel = new Date(p.date).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: period === "1y" || period === "all" ? "2-digit" : undefined,
-        });
         acc.push({ dateLabel, rawDate: p.date, price: p.priceUsd, prices: [p.priceUsd] });
       }
     }
-    acc.sort((a, b) => a.rawDate.localeCompare(b.rawDate));
-
-    // Downsample to weekly average if too many points
-    if (acc.length > DOWNSAMPLE_THRESHOLD) {
-      const weeks = new Map<string, { dateLabel: string; rawDate: string; sum: number; count: number }>();
-      for (const point of acc) {
-        const d = new Date(point.rawDate);
-        // Bucket by ISO week (year + week number)
-        const yearStart = new Date(d.getFullYear(), 0, 1);
-        const weekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + yearStart.getDay() + 1) / 7);
-        const key = `${d.getFullYear()}-W${weekNum}`;
-        const existing = weeks.get(key);
-        if (existing) {
-          existing.sum += point.price;
-          existing.count += 1;
-        } else {
-          weeks.set(key, {
-            dateLabel: point.dateLabel,
-            rawDate: point.rawDate,
-            sum: point.price,
-            count: 1,
-          });
-        }
-      }
-      return Array.from(weeks.values())
-        .sort((a, b) => a.rawDate.localeCompare(b.rawDate))
-        .map((w) => ({
-          dateLabel: w.dateLabel,
-          rawDate: w.rawDate,
-          price: w.sum / w.count,
-          prices: [],
-        }));
-    }
     return acc;
-  }, [data?.priceHistory, period]);
+  }, [data?.priceHistory]);
 
   // Value chart data — for aggregate view use the API data; for symbol drill-down,
   // synthesize from price × quantity (post-purchase only)
@@ -323,33 +268,24 @@ export default function AssetDetailModal({
   );
 
   // Purchase markers — Y position is the user's actual purchase price (chart unit)
-  // Markers whose purchase date is older than the chart window are flagged
-  // `outsideWindow` so we can snap them to the leftmost edge with a label.
-  const purchaseMarkers = useMemo(() => {
-    const earliestVisibleDate = priceChartData[0]?.rawDate;
-    return selectedInvestments
-      .filter((inv) => inv.purchaseDate || inv.createdAt)
-      .map((inv) => {
-        const dateStr = (inv.purchaseDate || inv.createdAt).split("T")[0];
-        const outsideWindow =
-          earliestVisibleDate != null && dateStr < earliestVisibleDate;
-        return {
-          dateLabel: new Date(dateStr).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          }),
-          rawDate: dateStr,
-          name: inv.name,
-          symbol: inv.symbol,
-          outsideWindow,
-          yValue: convertPurchaseToChartPrice(inv, egpRate),
-        };
-      });
-  }, [selectedInvestments, egpRate, priceChartData]);
-
-  const outsideWindowCount = useMemo(
-    () => purchaseMarkers.filter((m) => m.outsideWindow).length,
-    [purchaseMarkers]
+  const purchaseMarkers = useMemo(
+    () =>
+      selectedInvestments
+        .filter((inv) => inv.purchaseDate || inv.createdAt)
+        .map((inv) => {
+          const dateStr = (inv.purchaseDate || inv.createdAt).split("T")[0];
+          return {
+            dateLabel: new Date(dateStr).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            }),
+            rawDate: dateStr,
+            name: inv.name,
+            symbol: inv.symbol,
+            yValue: convertPurchaseToChartPrice(inv, egpRate),
+          };
+        }),
+    [selectedInvestments, egpRate]
   );
 
   const latestPrice =
@@ -399,9 +335,7 @@ export default function AssetDetailModal({
                 · {symbolsForType.find((s) => s.symbol === activeSymbol)?.name || activeSymbol}
               </span>
             )}
-            <span className="text-xs text-gray-400">
-              {PERIOD_OPTIONS.find((p) => p.key === period)?.label}
-            </span>
+            <span className="text-xs text-gray-400">90 days</span>
           </div>
           <button
             onClick={onClose}
@@ -460,37 +394,20 @@ export default function AssetDetailModal({
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
-            {showDrilldown && (
-              <select
-                value={activeSymbol || ""}
-                onChange={(e) => setActiveSymbol(e.target.value || null)}
-                className="text-xs border border-gray-300 rounded-md px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-[260px]"
-              >
-                <option value="">Aggregate ({symbolsForType.length} assets)</option>
-                {symbolsForType.map((s) => (
-                  <option key={s.symbol} value={s.symbol}>
-                    {s.name} ({s.symbol})
-                  </option>
-                ))}
-              </select>
-            )}
-            <div className="flex gap-0.5 bg-gray-100 rounded-md p-0.5">
-              {PERIOD_OPTIONS.map((p) => (
-                <button
-                  key={p.key}
-                  onClick={() => setPeriod(p.key)}
-                  className={`px-2 py-1 text-[11px] font-medium rounded transition-colors ${
-                    period === p.key
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  {p.label}
-                </button>
+          {showDrilldown && (
+            <select
+              value={activeSymbol || ""}
+              onChange={(e) => setActiveSymbol(e.target.value || null)}
+              className="text-xs border border-gray-300 rounded-md px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-[260px]"
+            >
+              <option value="">Aggregate ({symbolsForType.length} assets)</option>
+              {symbolsForType.map((s) => (
+                <option key={s.symbol} value={s.symbol}>
+                  {s.name} ({s.symbol})
+                </option>
               ))}
-            </div>
-          </div>
+            </select>
+          )}
         </div>
 
         {/* Chart area */}
@@ -570,25 +487,20 @@ export default function AssetDetailModal({
 
                     {visible.dots &&
                       purchaseMarkers.map((pm, i) => {
-                        let targetIdx: number;
-                        if (pm.outsideWindow) {
-                          // Snap to leftmost edge with a label so user knows it's pulled
-                          targetIdx = 0;
-                        } else {
-                          targetIdx = priceChartData.findIndex(
-                            (d) => d.rawDate === pm.rawDate
-                          );
-                          if (targetIdx === -1) {
-                            let minDiff = Infinity;
-                            for (let j = 0; j < priceChartData.length; j++) {
-                              const diff = Math.abs(
-                                new Date(priceChartData[j].rawDate).getTime() -
-                                  new Date(pm.rawDate).getTime()
-                              );
-                              if (diff < minDiff) {
-                                minDiff = diff;
-                                targetIdx = j;
-                              }
+                        // Find matching X tick (closest by raw date)
+                        let targetIdx = priceChartData.findIndex(
+                          (d) => d.dateLabel === pm.dateLabel
+                        );
+                        if (targetIdx === -1) {
+                          let minDiff = Infinity;
+                          for (let j = 0; j < priceChartData.length; j++) {
+                            const diff = Math.abs(
+                              new Date(priceChartData[j].rawDate).getTime() -
+                                new Date(pm.rawDate).getTime()
+                            );
+                            if (diff < minDiff) {
+                              minDiff = diff;
+                              targetIdx = j;
                             }
                           }
                         }
@@ -599,21 +511,10 @@ export default function AssetDetailModal({
                             key={`buy-${i}`}
                             x={priceChartData[targetIdx].dateLabel}
                             y={pm.yValue}
-                            r={pm.outsideWindow ? 6 : 5}
-                            fill={pm.outsideWindow ? "#fbbf24" : "#ef4444"}
+                            r={5}
+                            fill="#ef4444"
                             stroke="#fff"
                             strokeWidth={2}
-                            label={
-                              pm.outsideWindow
-                                ? {
-                                    value: `← ${new Date(pm.rawDate).toLocaleDateString("en-US", { month: "short", year: "2-digit" })}`,
-                                    position: "right",
-                                    fill: "#92400e",
-                                    fontSize: 9,
-                                    offset: 6,
-                                  }
-                                : undefined
-                            }
                           />
                         );
                       })}
@@ -628,10 +529,7 @@ export default function AssetDetailModal({
                       onClick={() => toggleLayer("dots")}
                     >
                       <div className="w-2.5 h-2.5 rounded-full bg-red-500 border border-white shadow-sm" />
-                      Purchase dates ({purchaseMarkers.length}
-                      {outsideWindowCount > 0 && (
-                        <>, {outsideWindowCount} earlier</>
-                      )})
+                      Purchase dates ({purchaseMarkers.length})
                     </LegendButton>
                   )}
                   {stats.avgPrice != null && (

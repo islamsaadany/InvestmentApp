@@ -6,6 +6,8 @@ const PERIOD_DAYS: Record<string, number> = {
   "7d": 7,
   "30d": 30,
   "90d": 90,
+  "3m": 90,
+  "6m": 180,
   "1y": 365,
 };
 
@@ -160,14 +162,25 @@ export async function GET(req: NextRequest) {
 
         hasAnyPrice = true;
 
+        let qtyChartUnit: number;
         if (
           (inv.assetType === "gold" || inv.assetType === "silver") &&
           inv.weightUnit === "grams"
         ) {
-          totalUsd += price * (inv.quantity / GRAMS_PER_TROY_OUNCE);
+          qtyChartUnit = inv.quantity / GRAMS_PER_TROY_OUNCE;
         } else {
-          totalUsd += price * inv.quantity;
+          qtyChartUnit = inv.quantity;
         }
+        // Adjust for purity so 21K gold contributes only 87.5% of weight to value
+        if (
+          (inv.assetType === "gold" || inv.assetType === "silver") &&
+          inv.purityPercent != null &&
+          inv.purityPercent > 0 &&
+          inv.purityPercent < 100
+        ) {
+          qtyChartUnit = qtyChartUnit * (inv.purityPercent / 100);
+        }
+        totalUsd += price * qtyChartUnit;
       }
 
       if (hasAnyPrice) {

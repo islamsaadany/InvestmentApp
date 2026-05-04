@@ -11,6 +11,8 @@ export interface InvestmentWithLiveData {
   purchasePrice: number;
   purchaseCurrency: string;
   purchaseDate: string | null;
+  purchaseExchangeRate: number | null;
+  purityPercent: number | null;
   weightUnit: WeightUnit | null;
   valuationMode: ValuationMode;
   currentValue: number | null;
