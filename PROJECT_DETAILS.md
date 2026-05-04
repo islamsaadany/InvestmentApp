@@ -504,4 +504,62 @@ DELETE /api/expert/watchlist?symbol=AAPL → Remove from watchlist
 
 ---
 
-*Last Updated: May 4, 2026 — Expert page split into 3 tabs (Options / US Stocks / Crypto), each with dedicated agent + watchlist*
+## 15. Average Down Analyzer
+
+**Added:** May 4, 2026
+
+A rule-based portfolio analyzer that flags positions where the current market price is below the user's avg cost or lowest individual purchase, and recommends whether averaging down makes sense. No AI calls — pure math on stored purchase data + live prices.
+
+**Where it lives:**
+- TopBar gets a new button (trending-down icon) next to the refresh button
+- Click opens a modal with summary stats + a list of recommendations sorted by actionability
+
+**Buckets and thresholds:**
+| Bucket | Trigger | Recommendation |
+|---|---|---|
+| `below_lowest` | Current < lowest individual purchase | Strongest averaging-down signal |
+| `good_dip` | 5-25% below avg cost | Good averaging-down opportunity |
+| `deep_dip` | >25% below avg cost | Verify thesis before adding (large drawdown warning) |
+| `small_dip` | 0-5% below avg cost | Within noise — wait for deeper dip |
+| `above_avg` | Current >= avg cost | No averaging case |
+
+**Files added:**
+- `lib/average-down-analyzer.ts` — pure-function analyzer (`analyzeInvestments`)
+- `lib/chart-helpers.ts` — shared price/quantity unit-conversion helpers (used by analyzer + chart modal)
+- `components/dashboard/AverageDownAnalyzerModal.tsx` — modal UI with summary strip + filter tabs (Actionable / All) + recommendation cards
+
+**Files modified:**
+- `components/layout/TopBar.tsx` — added analyzer button + modal mount
+
+**Future:** AI-powered version planned (see `FUTURE_FEATURES.md`).
+
+---
+
+## 16. Asset Detail Modal — Redesign
+
+**Updated:** May 4, 2026
+
+The modal that opens when clicking a pie-chart slice or summary-table row was redesigned:
+
+**Behavior changes:**
+- **Bigger** — width grew from 480px to 800px to fit new content
+- **Asset-type tabs** at the top — only types user owns (so a portfolio without EGX won't show an EGX tab). Switch between Gold / Silver / Crypto / US Stocks / EGX without closing the modal.
+- **Drill-down dropdown** for multi-asset types — when on Crypto / US Stocks / EGX (which can hold multiple individual assets), a dropdown next to the chart-tab buttons lets the user switch between "Aggregate" and any individual asset. Single-asset types (Gold / Silver) skip the dropdown.
+- **Lowest-purchase reference line** added (green dashed) alongside avg-cost (red dashed) and current-price (orange dashed).
+- **Click-to-toggle legend** — clicking any legend item below the chart shows/hides that line or marker.
+
+**Bug fixes:**
+- **Purchase dots now plot at user's actual purchase price** (previously plotted at market price on the purchase date — visually inconsistent with the avg-cost line). For metals bought in grams, prices are converted to USD per troy ounce to match the chart axis.
+- **Y-axis tick formatter** — `formatAxisValue` now uses 1 decimal place for K/M values when below 10K (so `4500` shows as `4.5K`, not `5K`), eliminating duplicate adjacent ticks.
+
+**Files added:**
+- `components/dashboard/AssetDetailModal.tsx` — new dedicated modal component (extracted from inline `AssetMiniChartPopupWrapper`)
+- `lib/chart-helpers.ts` — shared unit-conversion helpers
+
+**Files modified:**
+- `components/dashboard/AllocationPieChart.tsx` — removed inline popup, imports new modal, passes full investments + egpRate
+- `lib/formatters.ts` — fixed `formatAxisValue` rounding
+
+---
+
+*Last Updated: May 4, 2026 — Added Average Down Analyzer + redesigned Asset Detail Modal (chart fixes + tabs + drill-down)*
