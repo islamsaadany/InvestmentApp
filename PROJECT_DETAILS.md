@@ -431,9 +431,9 @@ Each tab shares: streaming chat UI, portfolio context toggle, scholarly Halal sc
 **Files added:**
 - `components/expert/ExpertTabs.tsx` — top-level tab switcher (Options / US Stocks / Crypto)
 - `lib/expert/us-stocks-system-prompt.txt` — HALAL-EQUITY agent system prompt
-- `lib/expert/us-stocks-kb.txt` — placeholder KB (full deep-research KB pending external delivery)
+- `lib/expert/Knowledge Base for a Halal US Stock Purchase Agent.md` — full deep-research KB for US Stocks expert (replaces interim placeholder, activated 2026-05-04)
 - `lib/expert/crypto-system-prompt.txt` — HALAL-CRYPTO agent system prompt
-- `lib/expert/crypto-kb.txt` — placeholder KB (full deep-research KB pending external delivery)
+- `lib/expert/Knowledge Base for a Halal Crypto Purchase Advisor.md` — full deep-research KB for Crypto expert (replaces interim placeholder, activated 2026-05-04)
 - `prisma/migrations/20260504_add_watchlist_category/migration.sql` — adds `WatchlistCategory` enum + `category` column to `watchlist`
 
 **Files modified:**
@@ -455,7 +455,7 @@ Each tab shares: streaming chat UI, portfolio context toggle, scholarly Halal sc
 - US Stocks: AAOIFI Standard 21 + Zoya/Musaffa/IdealRatings cross-check, sector exclusions, debt/interest ratio thresholds
 - Crypto: Conservative — defaults to stricter scholarly view; flags scholarly debate on PoS staking, stablecoins, DeFi tokens; instant-avoid list for memecoins, lending protocols, privacy coins
 
-**Note on KBs:** The `us-stocks-kb.txt` and `crypto-kb.txt` files currently contain interim placeholder guidance. Full deep-research KBs are being prepared externally and will replace these files when ready.
+**Note on KBs:** As of 2026-05-04, the full deep-research KBs are active for all three tabs. The interim placeholder files (`us-stocks-kb.txt`, `crypto-kb.txt`) have been removed; `lib/expert-prompts.ts` now loads the full `.md` knowledge base files directly.
 
 **Dependencies added:**
 - `ai` (Vercel AI SDK core)

@@ -10,11 +10,11 @@ const FILE_MAP: Record<ExpertMode, { systemPrompt: string; kb: string }> = {
   },
   "us-stocks": {
     systemPrompt: "us-stocks-system-prompt.txt",
-    kb: "us-stocks-kb.txt",
+    kb: "Knowledge Base for a Halal US Stock Purchase Agent.md",
   },
   crypto: {
     systemPrompt: "crypto-system-prompt.txt",
-    kb: "crypto-kb.txt",
+    kb: "Knowledge Base for a Halal Crypto Purchase Advisor.md",
   },
 };
 
