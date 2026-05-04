@@ -43,10 +43,10 @@ interface AssetDetailModalProps {
 }
 
 type ChartTab = "price" | "value";
-type ChartPeriod = "90d" | "3m" | "6m" | "1y" | "all";
+type ChartPeriod = "30d" | "3m" | "6m" | "1y" | "all";
 
 const PERIOD_OPTIONS: Array<{ key: ChartPeriod; label: string }> = [
-  { key: "90d", label: "90D" },
+  { key: "30d", label: "30D" },
   { key: "3m", label: "3M" },
   { key: "6m", label: "6M" },
   { key: "1y", label: "1Y" },
@@ -54,15 +54,13 @@ const PERIOD_OPTIONS: Array<{ key: ChartPeriod; label: string }> = [
 ];
 
 const PERIOD_DAYS_MAP: Record<ChartPeriod, number | null> = {
-  "90d": 90,
+  "30d": 30,
   "3m": 90,
   "6m": 180,
   "1y": 365,
   all: null,
 };
 
-// If chart would have more points than this, down-sample by week
-const DOWNSAMPLE_THRESHOLD = 180;
 
 interface PricePoint {
   date: string;
@@ -95,7 +93,7 @@ export default function AssetDetailModal({
   const [activeAssetType, setActiveAssetType] = useState(initialAssetType);
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
   const [tab, setTab] = useState<ChartTab>("price");
-  const [period, setPeriod] = useState<ChartPeriod>("90d");
+  const [period, setPeriod] = useState<ChartPeriod>("30d");
   const [visible, setVisible] = useState<VisibleLayers>({
     dots: true,
     avg: true,
@@ -243,8 +241,8 @@ export default function AssetDetailModal({
     return acc;
   }, [data?.priceHistory]);
 
-  // Display-window slice of the full history. Filtered by selected period and
-  // optionally down-sampled to weekly when too many points.
+  // Display-window slice of the full history. Filtered by selected period.
+  // Always uses daily resolution so purchase-date dots land exactly on the line.
   const priceChartData = useMemo(() => {
     let windowed = fullPriceHistory;
     const days = PERIOD_DAYS_MAP[period];
@@ -254,9 +252,8 @@ export default function AssetDetailModal({
       const cutoffStr = cutoff.toISOString().split("T")[0];
       windowed = fullPriceHistory.filter((d) => d.rawDate >= cutoffStr);
     }
-    // Re-format date label depending on whether year should be shown
     const showYear = period === "1y" || period === "all";
-    windowed = windowed.map((d) => ({
+    return windowed.map((d) => ({
       ...d,
       dateLabel: new Date(d.rawDate).toLocaleDateString("en-US", {
         month: "short",
@@ -264,38 +261,6 @@ export default function AssetDetailModal({
         year: showYear ? "2-digit" : undefined,
       }),
     }));
-
-    // Downsample to weekly average if too many points
-    if (windowed.length > DOWNSAMPLE_THRESHOLD) {
-      const weeks = new Map<string, { dateLabel: string; rawDate: string; sum: number; count: number }>();
-      for (const point of windowed) {
-        const d = new Date(point.rawDate);
-        const yearStart = new Date(d.getFullYear(), 0, 1);
-        const weekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + yearStart.getDay() + 1) / 7);
-        const key = `${d.getFullYear()}-W${weekNum}`;
-        const existing = weeks.get(key);
-        if (existing) {
-          existing.sum += point.price;
-          existing.count += 1;
-        } else {
-          weeks.set(key, {
-            dateLabel: point.dateLabel,
-            rawDate: point.rawDate,
-            sum: point.price,
-            count: 1,
-          });
-        }
-      }
-      return Array.from(weeks.values())
-        .sort((a, b) => a.rawDate.localeCompare(b.rawDate))
-        .map((w) => ({
-          dateLabel: w.dateLabel,
-          rawDate: w.rawDate,
-          price: w.sum / w.count,
-          prices: [] as number[],
-        }));
-    }
-    return windowed;
   }, [fullPriceHistory, period]);
 
   // Value chart data — for aggregate view use the API data; for symbol drill-down,
