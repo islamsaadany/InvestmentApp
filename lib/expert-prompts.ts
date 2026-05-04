@@ -1,34 +1,63 @@
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 
-let cachedKB: string | null = null;
-let cachedSystemPrompt: string | null = null;
+export type ExpertMode = "options" | "us-stocks" | "crypto";
+
+const FILE_MAP: Record<ExpertMode, { systemPrompt: string; kb: string }> = {
+  options: {
+    systemPrompt: "system-prompt.txt",
+    kb: "kb.txt",
+  },
+  "us-stocks": {
+    systemPrompt: "us-stocks-system-prompt.txt",
+    kb: "us-stocks-kb.txt",
+  },
+  crypto: {
+    systemPrompt: "crypto-system-prompt.txt",
+    kb: "crypto-kb.txt",
+  },
+};
+
+const promptCache = new Map<string, string>();
 
 function readTextFile(filename: string): string {
+  if (promptCache.has(filename)) {
+    return promptCache.get(filename)!;
+  }
   const filePath = join(process.cwd(), "lib", "expert", filename);
-  return readFileSync(filePath, "utf-8");
-}
-
-export function getKnowledgeBase(): string {
-  if (!cachedKB) {
-    cachedKB = readTextFile("kb.txt");
+  if (!existsSync(filePath)) {
+    return "";
   }
-  return cachedKB;
+  const content = readFileSync(filePath, "utf-8");
+  promptCache.set(filename, content);
+  return content;
 }
 
-export function getSystemPrompt(): string {
-  if (!cachedSystemPrompt) {
-    cachedSystemPrompt = readTextFile("system-prompt.txt");
-  }
-  return cachedSystemPrompt;
+export function getSystemPrompt(mode: ExpertMode): string {
+  return readTextFile(FILE_MAP[mode].systemPrompt);
 }
 
-export function buildFullSystemPrompt(portfolioContext?: string, watchlistContext?: string): string {
+export function getKnowledgeBase(mode: ExpertMode): string {
+  return readTextFile(FILE_MAP[mode].kb);
+}
+
+export function buildFullSystemPrompt(
+  mode: ExpertMode,
+  portfolioContext?: string,
+  watchlistContext?: string
+): string {
   const parts: string[] = [];
 
-  parts.push(getSystemPrompt());
-  parts.push("\n\n--- KNOWLEDGE BASE ---\n\n");
-  parts.push(getKnowledgeBase());
+  const systemPrompt = getSystemPrompt(mode);
+  if (systemPrompt) {
+    parts.push(systemPrompt);
+  }
+
+  const kb = getKnowledgeBase(mode);
+  if (kb) {
+    parts.push("\n\n--- KNOWLEDGE BASE ---\n\n");
+    parts.push(kb);
+  }
 
   if (portfolioContext) {
     parts.push("\n\n--- USER'S CURRENT PORTFOLIO ---\n\n");

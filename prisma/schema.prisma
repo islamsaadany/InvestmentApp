@@ -25,6 +25,12 @@ enum ValuationMode {
   manual
 }
 
+enum WatchlistCategory {
+  options
+  us_stocks
+  crypto
+}
+
 model Investment {
   id               Int        @id @default(autoincrement())
   name             String     @db.VarChar(200)
@@ -71,12 +77,13 @@ model PortfolioSnapshot {
 }
 
 model Watchlist {
-  id      Int      @id @default(autoincrement())
-  symbol  String   @db.VarChar(20)
-  name    String?  @db.VarChar(200)
-  addedAt DateTime @default(now()) @map("added_at")
+  id       Int               @id @default(autoincrement())
+  symbol   String            @db.VarChar(20)
+  name     String?           @db.VarChar(200)
+  category WatchlistCategory @default(options)
+  addedAt  DateTime          @default(now()) @map("added_at")
 
-  @@unique([symbol])
+  @@unique([symbol, category])
   @@map("watchlist")
 }
 

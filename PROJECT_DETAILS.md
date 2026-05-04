@@ -381,11 +381,22 @@ Common Egyptian stocks on yfinance (`.CA` suffix for Cairo Exchange):
 
 ---
 
-## 13. Expert Agent (Halal Options Trading Advisor)
+## 13. Expert Agent (Multi-Tab Halal Investment Advisor)
 
-**Added:** April 12, 2026
+**Added:** April 12, 2026 — Initial Halal options trading advisor
+**Updated:** May 4, 2026 — Split into 3 tabs: Options, US Stocks, Crypto
 
-**What it is:** An AI-powered Expert page that provides Halal-compliant US stock options trading recommendations using the HALAL-OPT trading agent framework.
+The Expert page now has **3 tabs**, each with its own AI agent persona, system prompt, knowledge base, and dedicated watchlist:
+
+| Tab | Agent | Scope |
+|-----|-------|-------|
+| **Options** | HALAL-OPT | Halal-compliant US stock options strategies (existing — unchanged) |
+| **US Stocks** | HALAL-EQUITY | Halal-screened US stock purchase recommendations (Analyze + Discover modes) |
+| **Crypto** | HALAL-CRYPTO | Halal-acceptable cryptocurrency purchase recommendations (Analyze + Discover modes) |
+
+Each tab shares: streaming chat UI, portfolio context toggle, scholarly Halal screening, and a category-scoped watchlist. Switching tabs swaps the chat session, the system prompt loaded by the API, and the watchlist filter.
+
+### Original Options scope (HALAL-OPT)
 
 **Features:**
 - Chat-style interface with streaming AI responses (Claude Opus by default)
@@ -413,7 +424,38 @@ Common Egyptian stocks on yfinance (`.CA` suffix for Cairo Exchange):
 - `prisma/schema.prisma` — Added `Watchlist` model
 
 **Database model added:**
-- `Watchlist` (id, symbol, name, addedAt) with unique constraint on symbol
+- `Watchlist` (id, symbol, name, **category**, addedAt) — composite unique constraint on `(symbol, category)`. Category is an enum: `options | us_stocks | crypto`. Existing rows default to `options`.
+
+### New tabs (May 4, 2026): US Stocks + Crypto
+
+**Files added:**
+- `components/expert/ExpertTabs.tsx` — top-level tab switcher (Options / US Stocks / Crypto)
+- `lib/expert/us-stocks-system-prompt.txt` — HALAL-EQUITY agent system prompt
+- `lib/expert/us-stocks-kb.txt` — placeholder KB (full deep-research KB pending external delivery)
+- `lib/expert/crypto-system-prompt.txt` — HALAL-CRYPTO agent system prompt
+- `lib/expert/crypto-kb.txt` — placeholder KB (full deep-research KB pending external delivery)
+- `prisma/migrations/20260504_add_watchlist_category/migration.sql` — adds `WatchlistCategory` enum + `category` column to `watchlist`
+
+**Files modified:**
+- `app/(app)/expert/page.tsx` — wraps content in tabs, passes mode to children
+- `components/expert/ChatInterface.tsx` — accepts `mode` prop, sends it in request body, swaps welcome message + placeholder per mode, scopes chat session per mode
+- `components/expert/WatchlistPanel.tsx` — accepts `category` prop, filters API calls by category
+- `app/api/expert/chat/route.ts` — reads `mode` from request body, loads the right system prompt + KB, filters watchlist by mode's category
+- `app/api/expert/watchlist/route.ts` — accepts `category` query/body parameter for GET/POST/DELETE
+- `lib/expert-prompts.ts` — refactored to multi-mode loader (per-mode system prompt + KB files)
+- `lib/types.ts` — added `WatchlistCategory` and `ExpertMode` types; added `category` to `WatchlistItem`
+- `prisma/schema.prisma` — added `WatchlistCategory` enum, `category` field, changed unique constraint to `(symbol, category)`
+- `tsconfig.json` — excluded `ui-versions/` from type-checking (snapshot folder)
+
+**API behavior changes:**
+- `POST /api/expert/chat` — now accepts `mode: "options" | "us-stocks" | "crypto"` in body (defaults to `options`)
+- `GET/POST/DELETE /api/expert/watchlist` — now accepts `category` parameter (defaults to `options`)
+
+**Halal compliance approach across tabs:**
+- US Stocks: AAOIFI Standard 21 + Zoya/Musaffa/IdealRatings cross-check, sector exclusions, debt/interest ratio thresholds
+- Crypto: Conservative — defaults to stricter scholarly view; flags scholarly debate on PoS staking, stablecoins, DeFi tokens; instant-avoid list for memecoins, lending protocols, privacy coins
+
+**Note on KBs:** The `us-stocks-kb.txt` and `crypto-kb.txt` files currently contain interim placeholder guidance. Full deep-research KBs are being prepared externally and will replace these files when ready.
 
 **Dependencies added:**
 - `ai` (Vercel AI SDK core)
@@ -462,4 +504,4 @@ DELETE /api/expert/watchlist?symbol=AAPL → Remove from watchlist
 
 ---
 
-*Last Updated: April 12, 2026 — Added Expert Agent page (Halal Options Trading Advisor)*
+*Last Updated: May 4, 2026 — Expert page split into 3 tabs (Options / US Stocks / Crypto), each with dedicated agent + watchlist*

@@ -5,55 +5,39 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, X, Eye, Loader2 } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
-import type { WatchlistItem, WatchlistCategory } from "@/lib/types";
+import type { WatchlistItem } from "@/lib/types";
 
-interface WatchlistPanelProps {
-  category: WatchlistCategory;
-  placeholder?: string;
-  emptyHint?: string;
-}
-
-export default function WatchlistPanel({
-  category,
-  placeholder = "Ticker (e.g. AAPL)",
-  emptyHint = "Add tickers for the agent to prioritize",
-}: WatchlistPanelProps) {
+export default function WatchlistPanel() {
   const queryClient = useQueryClient();
   const [symbol, setSymbol] = useState("");
   const [name, setName] = useState("");
 
   const { data: watchlist = [], isLoading } = useQuery<WatchlistItem[]>({
-    queryKey: ["watchlist", category],
-    queryFn: () =>
-      axios
-        .get(`/api/expert/watchlist?category=${category}`)
-        .then((r) => r.data),
+    queryKey: ["watchlist"],
+    queryFn: () => axios.get("/api/expert/watchlist").then((r) => r.data),
   });
 
   const addMutation = useMutation({
     mutationFn: (data: { symbol: string; name: string }) =>
-      axios.post("/api/expert/watchlist", { ...data, category }),
+      axios.post("/api/expert/watchlist", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["watchlist", category] });
+      queryClient.invalidateQueries({ queryKey: ["watchlist"] });
       setSymbol("");
       setName("");
       toast.success("Added to watchlist");
     },
-    onError: (error: unknown) => {
+    onError: (error: any) => {
       const msg =
-        (error as { response?: { data?: { error?: string } } })?.response?.data
-          ?.error || "Failed to add to watchlist";
+        error.response?.data?.error || "Failed to add to watchlist";
       toast.error(msg);
     },
   });
 
   const removeMutation = useMutation({
     mutationFn: (sym: string) =>
-      axios.delete(
-        `/api/expert/watchlist?symbol=${encodeURIComponent(sym)}&category=${category}`
-      ),
+      axios.delete(`/api/expert/watchlist?symbol=${sym}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["watchlist", category] });
+      queryClient.invalidateQueries({ queryKey: ["watchlist"] });
       toast.success("Removed from watchlist");
     },
     onError: () => toast.error("Failed to remove"),
@@ -78,7 +62,7 @@ export default function WatchlistPanel({
             type="text"
             value={symbol}
             onChange={(e) => setSymbol(e.target.value)}
-            placeholder={placeholder}
+            placeholder="Ticker (e.g. AAPL)"
             className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
           <input
@@ -110,7 +94,7 @@ export default function WatchlistPanel({
           </div>
         ) : watchlist.length === 0 ? (
           <p className="text-xs text-gray-400 text-center py-4 px-2">
-            {emptyHint}
+            Add stocks to your watchlist for the agent to prioritize
           </p>
         ) : (
           <div className="space-y-1">
