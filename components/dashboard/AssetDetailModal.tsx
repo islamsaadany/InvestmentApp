@@ -16,10 +16,7 @@ import {
 } from "recharts";
 import { X } from "lucide-react";
 import { formatCurrency, formatAxisValue, niceYDomain } from "@/lib/formatters";
-import {
-  computePurchaseStats,
-  type InvestmentForChart,
-} from "@/lib/chart-helpers";
+import { type InvestmentForChart } from "@/lib/chart-helpers";
 
 interface OwnedAssetType {
   assetType: string;
@@ -315,12 +312,6 @@ export default function AssetDetailModal({
       });
   }, [activeSymbol, data?.valueHistory, currency, priceChartData, selectedInvestments, egpRate]);
 
-  // Purchase stats (avg, lowest) using the shared helper
-  const stats = useMemo(
-    () => computePurchaseStats(selectedInvestments, egpRate),
-    [selectedInvestments, egpRate]
-  );
-
   // Purchase markers — Y position is the asset's MARKET PRICE on the purchase
   // date (i.e., the dot sits on the yellow chart line at the date of purchase).
   // What the user actually paid is shown by the avg-cost and lowest-cost reference
@@ -378,6 +369,23 @@ export default function AssetDetailModal({
     () => purchaseMarkers.filter((m) => m.outsideWindow).length,
     [purchaseMarkers]
   );
+
+  // Stats derived directly from the dot positions:
+  //   avgPrice    = simple mean of market prices on purchase dates (= mean of dot Y values)
+  //   lowestPrice = minimum (= the lowest dot)
+  const stats = useMemo(() => {
+    if (purchaseMarkers.length === 0) {
+      return { avgPrice: null as number | null, lowestPrice: null as number | null };
+    }
+    const values = purchaseMarkers.map((m) => m.yValue);
+    const sum = values.reduce((s, v) => s + v, 0);
+    const avg = sum / values.length;
+    const min = Math.min(...values);
+    return {
+      avgPrice: Math.round(avg * 100) / 100,
+      lowestPrice: Math.round(min * 100) / 100,
+    };
+  }, [purchaseMarkers]);
 
   const latestPrice =
     priceChartData.length > 0
