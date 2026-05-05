@@ -1,5 +1,5 @@
 import { streamText } from "ai";
-import { getAIModel, getProviderOptions } from "@/lib/ai-provider";
+import { getAIModel, getCurrentProvider } from "@/lib/ai-provider";
 import { buildFullSystemPrompt, type ExpertMode } from "@/lib/expert-prompts";
 import { prisma } from "@/lib/db";
 import { enrichInvestments } from "@/lib/enrich";
@@ -171,12 +171,42 @@ export async function POST(req: Request) {
       return jsonError("No message content to send to the AI agent.", 400);
     }
 
+    // Loosen Gemini safety thresholds. Defaults block most halal-finance
+    // prompts ("should I buy BTC?") with empty completions because they
+    // trigger DANGEROUS_CONTENT. BLOCK_ONLY_HIGH still blocks egregious
+    // content but allows analytical answers the app is designed to give.
+    const providerOptions =
+      getCurrentProvider() === "google"
+        ? {
+            google: {
+              safetySettings: [
+                {
+                  category: "HARM_CATEGORY_HARASSMENT",
+                  threshold: "BLOCK_ONLY_HIGH",
+                },
+                {
+                  category: "HARM_CATEGORY_HATE_SPEECH",
+                  threshold: "BLOCK_ONLY_HIGH",
+                },
+                {
+                  category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                  threshold: "BLOCK_ONLY_HIGH",
+                },
+                {
+                  category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                  threshold: "BLOCK_ONLY_HIGH",
+                },
+              ],
+            },
+          }
+        : undefined;
+
     const tStream = Date.now();
     const result = streamText({
       model,
       system: systemPrompt,
       messages: normalized,
-      providerOptions: getProviderOptions(),
+      providerOptions,
       onError: ({ error: streamError }) => {
         console.error("streamText runtime error:", streamError);
       },
