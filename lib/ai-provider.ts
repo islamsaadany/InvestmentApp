@@ -32,3 +32,7 @@ export function getProviderName(): string {
   const modelId = process.env.AI_MODEL || PROVIDER_DEFAULTS[provider];
   return `${provider}/${modelId}`;
 }
+
+export function getCurrentProvider(): AIProvider {
+  return (process.env.AI_PROVIDER || "anthropic") as AIProvider;
+}

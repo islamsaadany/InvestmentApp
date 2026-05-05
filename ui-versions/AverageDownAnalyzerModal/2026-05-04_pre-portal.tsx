@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
-import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { X, TrendingDown, AlertTriangle, Check, Info } from "lucide-react";
@@ -70,59 +69,14 @@ const BUCKET_META: Record<
   },
 };
 
-type ViewKey = "actionable" | "all" | "rules";
-
-const FILTER_TABS: Array<{ key: ViewKey; label: string }> = [
+const FILTER_TABS: Array<{ key: "actionable" | "all"; label: string }> = [
   { key: "actionable", label: "Actionable" },
   { key: "all", label: "All assets" },
-  { key: "rules", label: "Rules" },
-];
-
-// Source of truth for the rules pane. Mirrors the thresholds in
-// lib/average-down-analyzer.ts. Update both files together if rules change.
-const RULES: Array<{
-  bucket: DipBucket;
-  trigger: string;
-  meaning: string;
-}> = [
-  {
-    bucket: "below_lowest",
-    trigger: "Current price is below every individual purchase you've made",
-    meaning:
-      "Strongest averaging-down signal. You'd be buying lower than your cheapest entry.",
-  },
-  {
-    bucket: "good_dip",
-    trigger: "Current price is 5% to 25% below your weighted avg cost",
-    meaning:
-      "Adding here meaningfully lowers your avg cost without flagging a thesis problem.",
-  },
-  {
-    bucket: "deep_dip",
-    trigger: "Current price is more than 25% below your weighted avg cost",
-    meaning:
-      "Severe drawdown. Verify the underlying thesis is still intact before adding.",
-  },
-  {
-    bucket: "small_dip",
-    trigger: "Current price is 0% to 5% below your weighted avg cost",
-    meaning: "Within normal noise. No action recommended.",
-  },
-  {
-    bucket: "above_avg",
-    trigger: "Current price is at or above your weighted avg cost",
-    meaning: "Position is currently profitable. Nothing to do for averaging down.",
-  },
 ];
 
 export default function AverageDownAnalyzerModal({ onClose }: Props) {
   const popupRef = useRef<HTMLDivElement>(null);
-  const [filter, setFilter] = useState<ViewKey>("actionable");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [filter, setFilter] = useState<"actionable" | "all">("actionable");
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -173,12 +127,8 @@ export default function AverageDownAnalyzerModal({ onClose }: Props) {
     );
   }, [recommendations, filter]);
 
-  // Portaled to document.body so the modal escapes any ancestor stacking
-  // context (e.g., the sticky-positioned Sidebar). Without this the modal
-  // ends up below the page content visually.
-  if (!mounted) return null;
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 p-4">
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
       <div
         ref={popupRef}
         className="bg-white rounded-xl shadow-xl border border-gray-200 w-[760px] max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col"
@@ -245,12 +195,9 @@ export default function AverageDownAnalyzerModal({ onClose }: Props) {
           ))}
         </div>
 
-        {/* Body: rules pane when that tab is active, otherwise the
-            recommendations list. */}
+        {/* Recommendations list */}
         <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-3">
-          {filter === "rules" ? (
-            <RulesPane />
-          ) : isLoading ? (
+          {isLoading ? (
             <div className="flex items-center justify-center h-[200px] text-gray-400 text-sm">
               Analyzing your portfolio...
             </div>
@@ -283,56 +230,6 @@ export default function AverageDownAnalyzerModal({ onClose }: Props) {
           </p>
         </div>
       </div>
-    </div>,
-    document.body
-  );
-}
-
-function RulesPane() {
-  return (
-    <div className="space-y-3 pt-1">
-      <p className="text-xs text-gray-500 leading-relaxed">
-        Each position is bucketed using only its current market price, your
-        weighted avg cost, and your lowest individual purchase. Buckets are
-        evaluated top to bottom — the first matching rule wins.
-      </p>
-      {RULES.map((rule) => {
-        const meta = BUCKET_META[rule.bucket];
-        const Icon = meta.icon;
-        return (
-          <div
-            key={rule.bucket}
-            className={`rounded-lg border ${meta.cardBorder} bg-white p-4`}
-          >
-            <div className="flex items-start gap-2 mb-2">
-              <Icon
-                className={`w-4 h-4 mt-0.5 flex-shrink-0 ${meta.badgeText}`}
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span
-                    className={`text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${meta.badgeBg} ${meta.badgeText}`}
-                  >
-                    {meta.label}
-                  </span>
-                  <span className="text-[11px] text-gray-500">
-                    {meta.description}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="text-xs text-gray-700 leading-relaxed">
-              <p className="mb-1">
-                <span className="text-gray-400">Trigger:</span> {rule.trigger}
-              </p>
-              <p>
-                <span className="text-gray-400">Why it matters:</span>{" "}
-                {rule.meaning}
-              </p>
-            </div>
-          </div>
-        );
-      })}
     </div>
   );
 }

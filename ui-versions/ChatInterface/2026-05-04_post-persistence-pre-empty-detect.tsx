@@ -10,7 +10,6 @@ import {
   BriefcaseBusiness,
   AlertCircle,
   RefreshCw,
-  Brain,
 } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 import type { ExpertMode } from "@/lib/types";
@@ -113,29 +112,6 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
         new TextStreamChatTransport({
           api: "/api/expert/chat",
           body: { includePortfolio, mode },
-          // Wrap fetch so non-2xx responses surface as real errors with the
-          // server's JSON message intact. Without this, the transport treats
-          // a 503/500 JSON body as an empty stream and the user sees the
-          // generic "no reply" timeout message instead of the actual cause.
-          fetch: async (input, init) => {
-            const response = await fetch(input, init);
-            if (!response.ok) {
-              let serverMessage = `Request failed (${response.status})`;
-              try {
-                const data = await response.clone().json();
-                if (data?.error) serverMessage = String(data.error);
-              } catch {
-                try {
-                  const text = await response.clone().text();
-                  if (text) serverMessage = text;
-                } catch {
-                  // ignore
-                }
-              }
-              throw new Error(serverMessage);
-            }
-            return response;
-          },
         }),
       [includePortfolio, mode]
     ),
@@ -247,24 +223,6 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
   const hasInteracted = messages.some((m) => m.role === "user");
   const showWelcome = !hasInteracted;
 
-  // Detect "the stream finished but the assistant produced no reply" — happens
-  // when the serverless function times out mid-stream (Vercel kills the worker
-  // after maxDuration) or when the provider returns an empty body. useChat
-  // doesn't surface this as `error`, so we infer it from the message tail.
-  const lastMsg = messages[messages.length - 1];
-  const lastMsgText = lastMsg ? getMessageText(lastMsg) : "";
-  const streamEndedEmpty =
-    !isLoading &&
-    hasInteracted &&
-    !error &&
-    (lastMsg?.role === "user" ||
-      (lastMsg?.role === "assistant" && lastMsgText.trim().length === 0));
-
-  const showErrorBanner = !isLoading && (Boolean(error) || streamEndedEmpty);
-  const errorBannerMessage = error
-    ? explainError(error.message)
-    : "The AI agent didn't return any reply. The serverless function may have timed out (Vercel free tier caps streaming around 60s) or the provider returned an empty response. Check the Vercel function logs for `streamText runtime error`, then retry.";
-
   return (
     <div className="flex-1 flex flex-col h-full">
       {/* Chat header */}
@@ -316,7 +274,7 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
           ) && (
             <div className="flex gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-                <Brain className="w-4 h-4 text-purple-600" />
+                <Loader2 className="w-4 h-4 text-purple-600 animate-spin" />
               </div>
               <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
                 <div className="flex items-center gap-1">
@@ -338,19 +296,18 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
           )}
 
         {/* Error banner: surfaces failed requests with an actionable hint and
-            a retry button. Covers both real errors from useChat and the
-            "stream ended with no reply" timeout case. */}
-        {showErrorBanner && (
+            a retry button. */}
+        {error && !isLoading && (
           <div className="flex gap-3">
             <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
               <AlertCircle className="w-4 h-4 text-red-600" />
             </div>
             <div className="flex-1 max-w-[80%] bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
               <div className="text-sm font-semibold text-red-800 mb-1">
-                Couldn&apos;t get a reply
+                Couldn&apos;t reach the AI agent
               </div>
               <div className="text-sm text-red-700 whitespace-pre-wrap">
-                {errorBannerMessage}
+                {explainError(error.message)}
               </div>
               {hasInteracted && (
                 <button

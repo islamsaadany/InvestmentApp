@@ -30,8 +30,6 @@ const WATCHLIST_HINTS: Record<
   },
 };
 
-const MODES: ExpertMode[] = ["options", "us-stocks", "crypto"];
-
 export default function ExpertPage() {
   const [mode, setMode] = useState<ExpertMode>("options");
   const hints = WATCHLIST_HINTS[mode];
@@ -46,19 +44,7 @@ export default function ExpertPage() {
           placeholder={hints.placeholder}
           emptyHint={hints.emptyHint}
         />
-        {/* Mount all three chat panes so each preserves its in-flight stream
-            and message state when the user switches tabs. Inactive panes are
-            hidden via CSS rather than unmounted. */}
-        <div className="flex flex-1 overflow-hidden">
-          {MODES.map((m) => (
-            <div
-              key={m}
-              className={`flex-1 ${mode === m ? "flex" : "hidden"}`}
-            >
-              <ChatInterface mode={m} />
-            </div>
-          ))}
-        </div>
+        <ChatInterface key={`chat-${mode}`} mode={mode} />
       </div>
     </div>
   );

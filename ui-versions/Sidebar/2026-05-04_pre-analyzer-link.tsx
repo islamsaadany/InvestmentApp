@@ -8,7 +8,6 @@ import {
   Briefcase,
   Bell,
   TrendingUp,
-  TrendingDown,
   LogOut,
   Brain,
   BarChart3,
@@ -23,7 +22,6 @@ import toast from "react-hot-toast";
 import SplitDetectionModal, {
   type PendingAdjustment,
 } from "@/components/common/SplitDetectionModal";
-import AverageDownAnalyzerModal from "@/components/dashboard/AverageDownAnalyzerModal";
 
 const links = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -46,7 +44,6 @@ export default function Sidebar() {
   const [pendingAdjustments, setPendingAdjustments] = useState<
     PendingAdjustment[]
   >([]);
-  const [analyzerOpen, setAnalyzerOpen] = useState(false);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -100,19 +97,6 @@ export default function Sidebar() {
             </Link>
           );
         })}
-
-        {/* Average Down Analyzer — opens a modal rather than navigating, so
-            it's a button styled to match the nav links. */}
-        <button
-          onClick={() => setAnalyzerOpen(true)}
-          title={collapsed ? "Analyzer" : undefined}
-          className={`flex items-center gap-3 ${
-            collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2.5"
-          } rounded-lg text-sm font-medium transition-colors text-slate-400 hover:bg-slate-800 hover:text-white text-left`}
-        >
-          <TrendingDown className="w-5 h-5 flex-shrink-0" />
-          {!collapsed && "Analyzer"}
-        </button>
       </nav>
 
       {/* Bottom section */}
@@ -239,10 +223,6 @@ export default function Sidebar() {
           queryClient.invalidateQueries();
         }}
       />
-
-      {analyzerOpen && (
-        <AverageDownAnalyzerModal onClose={() => setAnalyzerOpen(false)} />
-      )}
     </aside>
   );
 }
