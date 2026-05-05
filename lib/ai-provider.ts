@@ -1,7 +1,7 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { google } from "@ai-sdk/google";
 import { openai } from "@ai-sdk/openai";
-import type { LanguageModel } from "ai";
+import type { LanguageModel, SharedV3ProviderOptions } from "ai";
 
 type AIProvider = "anthropic" | "google" | "openai";
 
@@ -32,7 +32,7 @@ export function getAIModel(): LanguageModel {
 // most halal-finance prompts ("should I buy BTC?") with empty completions.
 // BLOCK_ONLY_HIGH still blocks egregious content but allows the analytical
 // answers the app is designed to give.
-export function getProviderOptions(): Record<string, Record<string, unknown>> {
+export function getProviderOptions(): SharedV3ProviderOptions {
   const provider = (process.env.AI_PROVIDER || "anthropic") as AIProvider;
   if (provider === "google") {
     return {
