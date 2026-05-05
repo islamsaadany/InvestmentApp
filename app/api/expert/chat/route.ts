@@ -252,6 +252,19 @@ export async function POST(req: Request) {
             } catch {
               // ignore
             }
+            // SDK warnings often explain silent feature drops (e.g. "model
+            // doesn't support providerOptions.google.safetySettings").
+            try {
+              const warnings = await result.warnings;
+              if (warnings && warnings.length > 0) {
+                console.error(
+                  "[chat] streamText warnings:",
+                  JSON.stringify(warnings)
+                );
+              }
+            } catch {
+              // ignore
+            }
             const elapsedMs = Date.now() - tStream;
             let marker: string;
             if (reason === "content-filter") {
