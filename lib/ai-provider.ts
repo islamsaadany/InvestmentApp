@@ -19,12 +19,24 @@ export function getAIModel(): LanguageModel {
     case "anthropic":
       return anthropic(modelId);
     case "google":
-      // Loosen Gemini's safety filters. The defaults are strict enough that
-      // financial-advice prompts (e.g. "should I buy BTC?") often return
-      // empty completions because they trigger the DANGEROUS_CONTENT filter.
-      // BLOCK_ONLY_HIGH still blocks egregious cases but allows the
-      // halal-investing analysis the app is built around.
-      return google(modelId, {
+      return google(modelId);
+    case "openai":
+      return openai(modelId);
+    default:
+      throw new Error(`Unsupported AI provider: ${provider}`);
+  }
+}
+
+// Per-provider runtime options passed to streamText({ providerOptions }).
+// Loosened Gemini safety thresholds live here because the defaults block
+// most halal-finance prompts ("should I buy BTC?") with empty completions.
+// BLOCK_ONLY_HIGH still blocks egregious content but allows the analytical
+// answers the app is designed to give.
+export function getProviderOptions(): Record<string, Record<string, unknown>> {
+  const provider = (process.env.AI_PROVIDER || "anthropic") as AIProvider;
+  if (provider === "google") {
+    return {
+      google: {
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
           { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
@@ -37,12 +49,10 @@ export function getAIModel(): LanguageModel {
             threshold: "BLOCK_ONLY_HIGH",
           },
         ],
-      });
-    case "openai":
-      return openai(modelId);
-    default:
-      throw new Error(`Unsupported AI provider: ${provider}`);
+      },
+    };
   }
+  return {};
 }
 
 export function getProviderName(): string {

@@ -1,5 +1,5 @@
 import { streamText } from "ai";
-import { getAIModel } from "@/lib/ai-provider";
+import { getAIModel, getProviderOptions } from "@/lib/ai-provider";
 import { buildFullSystemPrompt, type ExpertMode } from "@/lib/expert-prompts";
 import { prisma } from "@/lib/db";
 import { enrichInvestments } from "@/lib/enrich";
@@ -176,6 +176,7 @@ export async function POST(req: Request) {
       model,
       system: systemPrompt,
       messages: normalized,
+      providerOptions: getProviderOptions(),
       onError: ({ error: streamError }) => {
         console.error("streamText runtime error:", streamError);
       },
