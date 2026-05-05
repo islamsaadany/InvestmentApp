@@ -19,7 +19,25 @@ export function getAIModel(): LanguageModel {
     case "anthropic":
       return anthropic(modelId);
     case "google":
-      return google(modelId);
+      // Loosen Gemini's safety filters. The defaults are strict enough that
+      // financial-advice prompts (e.g. "should I buy BTC?") often return
+      // empty completions because they trigger the DANGEROUS_CONTENT filter.
+      // BLOCK_ONLY_HIGH still blocks egregious cases but allows the
+      // halal-investing analysis the app is built around.
+      return google(modelId, {
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_ONLY_HIGH",
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_ONLY_HIGH",
+          },
+        ],
+      });
     case "openai":
       return openai(modelId);
     default:
