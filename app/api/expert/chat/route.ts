@@ -4,6 +4,10 @@ import { buildFullSystemPrompt, type ExpertMode } from "@/lib/expert-prompts";
 import { prisma } from "@/lib/db";
 import { enrichInvestments } from "@/lib/enrich";
 
+// Streaming responses can run longer than the 10s Vercel Hobby default.
+// 60s is the Hobby-plan ceiling and is plenty for Gemini Flash replies.
+export const maxDuration = 60;
+
 const VALID_MODES: ExpertMode[] = ["options", "us-stocks", "crypto"];
 
 const MODE_TO_CATEGORY = {
@@ -161,6 +165,9 @@ export async function POST(req: Request) {
       model,
       system: systemPrompt,
       messages: normalized,
+      onError: ({ error: streamError }) => {
+        console.error("streamText runtime error:", streamError);
+      },
     });
 
     return result.toTextStreamResponse();
