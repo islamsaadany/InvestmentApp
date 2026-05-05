@@ -100,6 +100,7 @@ export async function POST(req: Request) {
       );
     }
 
+    const t0 = Date.now();
     const { messages, includePortfolio, mode } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -113,23 +114,32 @@ export async function POST(req: Request) {
     // Build context
     let portfolioContext: string | undefined;
     if (includePortfolio) {
+      const tPortfolio = Date.now();
       const investments = await prisma.investment.findMany({
         orderBy: { createdAt: "desc" },
       });
       const enriched = await enrichInvestments(investments);
       portfolioContext = formatPortfolioContext(enriched);
+      console.log(
+        `[chat] portfolio enrich (${investments.length} positions) took ${Date.now() - tPortfolio}ms`
+      );
     }
 
+    const tWatchlist = Date.now();
     const watchlist = await prisma.watchlist.findMany({
       where: { category: MODE_TO_CATEGORY[expertMode] },
       orderBy: { addedAt: "desc" },
     });
     const watchlistContext = formatWatchlistContext(watchlist);
+    console.log(`[chat] watchlist fetch took ${Date.now() - tWatchlist}ms`);
 
     const systemPrompt = buildFullSystemPrompt(
       expertMode,
       portfolioContext,
       watchlistContext || undefined
+    );
+    console.log(
+      `[chat] systemPrompt built: ${systemPrompt.length} chars (mode=${expertMode}, includePortfolio=${!!portfolioContext})`
     );
 
     const model = getAIModel();
@@ -161,6 +171,7 @@ export async function POST(req: Request) {
       return jsonError("No message content to send to the AI agent.", 400);
     }
 
+    const tStream = Date.now();
     const result = streamText({
       model,
       system: systemPrompt,
@@ -170,7 +181,62 @@ export async function POST(req: Request) {
       },
     });
 
-    return result.toTextStreamResponse();
+    // Manually consume textStream so we can:
+    //   1. Log timing of first/last token (helps diagnose hangs in Vercel logs)
+    //   2. Detect zero-token completions and emit a visible marker so the
+    //      client never sees a silent empty stream.
+    const encoder = new TextEncoder();
+    const totalRequestStart = t0;
+    const readable = new ReadableStream({
+      async start(controller) {
+        let chunkCount = 0;
+        let totalChars = 0;
+        let firstChunkAt: number | null = null;
+        try {
+          for await (const chunk of result.textStream) {
+            if (firstChunkAt === null) {
+              firstChunkAt = Date.now();
+              console.log(
+                `[chat] first token at ${firstChunkAt - tStream}ms after streamText, ${firstChunkAt - totalRequestStart}ms total`
+              );
+            }
+            chunkCount++;
+            totalChars += chunk.length;
+            controller.enqueue(encoder.encode(chunk));
+          }
+          if (chunkCount === 0) {
+            const marker = `\n\n[server: stream finished with 0 tokens after ${Date.now() - tStream}ms — likely provider returned empty completion or timed out. Check Vercel function logs for "streamText runtime error" or auth/quota errors.]`;
+            controller.enqueue(encoder.encode(marker));
+            console.error(
+              `[chat] zero-token completion (mode=${expertMode}, includePortfolio=${!!portfolioContext}, systemPromptChars=${systemPrompt.length})`
+            );
+          } else {
+            console.log(
+              `[chat] stream done: ${chunkCount} chunks / ${totalChars} chars in ${Date.now() - tStream}ms`
+            );
+          }
+        } catch (streamErr) {
+          const msg =
+            streamErr instanceof Error
+              ? streamErr.message
+              : String(streamErr);
+          console.error("[chat] stream consume error:", streamErr);
+          controller.enqueue(
+            encoder.encode(`\n\n[server: stream error — ${msg}]`)
+          );
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(readable, {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "X-Vercel-AI-Data-Stream": "v1",
+        "Cache-Control": "no-cache",
+      },
+    });
   } catch (error: unknown) {
     console.error("Expert chat error:", error);
     const raw =

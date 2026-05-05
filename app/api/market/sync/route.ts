@@ -45,20 +45,33 @@ export async function POST() {
         select: { recordedDate: true },
       });
 
-      // If no data at all, skip (user needs to run full backfill first)
-      if (!lastRecord) continue;
-
-      const lastDate = lastRecord.recordedDate;
-      const daysSinceLast = Math.floor(
-        (today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      // Only fetch if there are missing days
-      if (daysSinceLast <= 0) continue;
-
-      // Fetch from last recorded date to today
-      const fromDate = new Date(lastDate);
-      fromDate.setDate(fromDate.getDate() + 1); // day after last record
+      let fromDate: Date;
+      if (!lastRecord) {
+        // Newly-added asset with zero history: do an initial backfill from
+        // one month before the earliest purchase of this asset to today.
+        // Without this branch, sync silently skips new assets forever and
+        // their detail charts show "No price data".
+        const matchingInvestments = investments.filter(
+          (inv) => inv.assetType === asset.assetType && inv.symbol === asset.symbol
+        );
+        let earliest: Date | null = null;
+        for (const inv of matchingInvestments) {
+          const candidate = inv.purchaseDate || inv.createdAt;
+          if (!earliest || candidate < earliest) earliest = candidate;
+        }
+        if (!earliest) continue;
+        fromDate = new Date(earliest);
+        fromDate.setMonth(fromDate.getMonth() - 1);
+      } else {
+        const lastDate = lastRecord.recordedDate;
+        const daysSinceLast = Math.floor(
+          (today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        // Only fetch if there are missing days
+        if (daysSinceLast <= 0) continue;
+        fromDate = new Date(lastDate);
+        fromDate.setDate(fromDate.getDate() + 1); // day after last record
+      }
 
       const historicalPrices = await getHistoricalPrices(
         asset.assetType,
