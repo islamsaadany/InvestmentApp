@@ -162,15 +162,11 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
 
   const getMessageText = useCallback(
     (msg: (typeof messages)[number]): string => {
-      if (msg.parts && msg.parts.length > 0) {
-        return msg.parts
-          .filter(
-            (p): p is { type: "text"; text: string } => p.type === "text"
-          )
-          .map((p) => p.text)
-          .join("");
-      }
-      return msg.content;
+      if (!msg.parts || msg.parts.length === 0) return "";
+      return msg.parts
+        .filter((p): p is { type: "text"; text: string } => p.type === "text")
+        .map((p) => p.text)
+        .join("");
     },
     []
   );
