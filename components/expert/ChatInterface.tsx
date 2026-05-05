@@ -113,6 +113,29 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
         new TextStreamChatTransport({
           api: "/api/expert/chat",
           body: { includePortfolio, mode },
+          // Wrap fetch so non-2xx responses surface as real errors with the
+          // server's JSON message intact. Without this, the transport treats
+          // a 503/500 JSON body as an empty stream and the user sees the
+          // generic "no reply" timeout message instead of the actual cause.
+          fetch: async (input, init) => {
+            const response = await fetch(input, init);
+            if (!response.ok) {
+              let serverMessage = `Request failed (${response.status})`;
+              try {
+                const data = await response.clone().json();
+                if (data?.error) serverMessage = String(data.error);
+              } catch {
+                try {
+                  const text = await response.clone().text();
+                  if (text) serverMessage = text;
+                } catch {
+                  // ignore
+                }
+              }
+              throw new Error(serverMessage);
+            }
+            return response;
+          },
         }),
       [includePortfolio, mode]
     ),
