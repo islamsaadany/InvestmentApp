@@ -130,13 +130,37 @@ export async function POST(req: Request) {
 
     const model = getAIModel();
 
+    // Client sends UIMessages from @ai-sdk/react v6 with `parts: [{type:"text",
+    // text: ...}]` and no top-level `content`. Older callers may still send
+    // `content`. Normalize to plain text either way.
+    type IncomingMessage = {
+      role: string;
+      content?: string;
+      parts?: Array<{ type: string; text?: string }>;
+    };
+    const normalized = (messages as IncomingMessage[])
+      .map((m) => {
+        const fromParts =
+          m.parts
+            ?.filter((p) => p.type === "text" && typeof p.text === "string")
+            .map((p) => p.text!)
+            .join("") ?? "";
+        const text = fromParts || m.content || "";
+        return {
+          role: m.role as "user" | "assistant",
+          content: text,
+        };
+      })
+      .filter((m) => m.content.length > 0);
+
+    if (normalized.length === 0) {
+      return jsonError("No message content to send to the AI agent.", 400);
+    }
+
     const result = streamText({
       model,
       system: systemPrompt,
-      messages: messages.map((m: { role: string; content: string }) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      })),
+      messages: normalized,
     });
 
     return result.toTextStreamResponse();
