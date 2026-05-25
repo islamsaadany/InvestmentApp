@@ -526,19 +526,20 @@ export default function AssetDetailModal({
         </div>
 
         {/* Chart area */}
-        <div className="flex-1 px-5 pb-5 overflow-y-auto">
+        <div className="flex-1 px-4 sm:px-5 pb-5 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center h-[300px] text-gray-400 text-sm">
+            <div className="flex items-center justify-center h-[220px] sm:h-[300px] text-gray-400 text-sm">
               Loading...
             </div>
           ) : tab === "price" ? (
             priceChartData.length === 0 ? (
-              <div className="flex items-center justify-center h-[300px] text-gray-400 text-sm">
+              <div className="flex items-center justify-center h-[220px] sm:h-[300px] text-gray-400 text-sm">
                 No price data available
               </div>
             ) : (
               <>
-                <ResponsiveContainer width="100%" height={320}>
+                <div className="h-[240px] sm:h-[320px]">
+                <ResponsiveContainer width="100%" height="100%">
                   <LineChart key={`price-${period}`} data={priceChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                     <XAxis
@@ -651,6 +652,7 @@ export default function AssetDetailModal({
                       })}
                   </LineChart>
                 </ResponsiveContainer>
+                </div>
 
                 {/* Legend with click-to-toggle */}
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
@@ -698,11 +700,12 @@ export default function AssetDetailModal({
               </>
             )
           ) : valueChartData.length === 0 ? (
-            <div className="flex items-center justify-center h-[300px] text-gray-400 text-sm">
+            <div className="flex items-center justify-center h-[220px] sm:h-[300px] text-gray-400 text-sm">
               No value data available
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={320}>
+            <div className="h-[240px] sm:h-[320px]">
+            <ResponsiveContainer width="100%" height="100%">
               <AreaChart key={`value-${period}`} data={valueChartData}>
                 <defs>
                   <linearGradient
@@ -758,6 +761,7 @@ export default function AssetDetailModal({
                 />
               </AreaChart>
             </ResponsiveContainer>
+            </div>
           )}
         </div>
       </div>

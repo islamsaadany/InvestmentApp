@@ -173,7 +173,8 @@ export default function PerformanceLineChart() {
           No performance data yet. Data builds over time.
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={280}>
+        <div className="h-[220px] sm:h-[280px]">
+        <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
@@ -218,6 +219,7 @@ export default function PerformanceLineChart() {
             ))}
           </AreaChart>
         </ResponsiveContainer>
+        </div>
       )}
       {purchaseDots.length > 0 && (
         <div className="mt-2 flex items-center gap-1.5 text-xs text-gray-400">

@@ -470,7 +470,8 @@ export default function AnalysisPage() {
                 No value history data available. Historical data will build over time.
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={300}>
+              <div className="h-[240px] sm:h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={valueChartData}>
                   <defs>
                     <linearGradient id="colorValueAnalysis" x1="0" y1="0" x2="0" y2="1">
@@ -501,6 +502,7 @@ export default function AnalysisPage() {
                   />
                 </AreaChart>
               </ResponsiveContainer>
+              </div>
             )}
           </div>
 
@@ -520,7 +522,8 @@ export default function AnalysisPage() {
               </div>
             ) : (
               <>
-                <ResponsiveContainer width="100%" height={350}>
+                <div className="h-[260px] sm:h-[350px]">
+                <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={priceChartData.series as any[]}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#94a3b8" />
@@ -624,6 +627,7 @@ export default function AnalysisPage() {
                     })}
                   </LineChart>
                 </ResponsiveContainer>
+                </div>
 
                 {/* Entry Points Legend */}
                 {entryPoints.length > 0 && (

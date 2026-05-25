@@ -181,8 +181,8 @@ export default function AllocationPieChart({
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Pie Chart */}
-        <div className="overflow-x-auto -mx-1 px-1">
-          <ResponsiveContainer width="100%" height={260}>
+        <div className="overflow-x-auto -mx-1 px-1 h-[220px] sm:h-[260px]">
+          <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={chartData}
