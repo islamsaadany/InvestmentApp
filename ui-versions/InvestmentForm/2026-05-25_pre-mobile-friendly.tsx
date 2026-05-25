@@ -242,7 +242,7 @@ export default function InvestmentForm({
             <label className="block text-sm font-medium text-gray-700 mb-1">Portfolio Name</label>
             <input {...register("name", { required: true })} placeholder="e.g. My EGX Brokerage" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Amount Invested (EGP)</label>
               <input type="number" step="any" {...register("purchasePrice", { required: true })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
@@ -255,7 +255,7 @@ export default function InvestmentForm({
         </>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
               <input {...register("name", { required: true })} placeholder="e.g. Bitcoin, Apple Inc" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
@@ -265,7 +265,7 @@ export default function InvestmentForm({
               <input {...register("symbol", { required: true })} placeholder="e.g. BTC, AAPL, COMI.CA" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Quantity {isMetals ? "(amount)" : "(shares/coins)"}</label>
               <input type="number" step="any" {...register("quantity", { required: true })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
@@ -300,7 +300,7 @@ export default function InvestmentForm({
               </p>
             </div>
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Price (per unit)</label>
               <input type="number" step="any" {...register("purchasePrice", { required: true })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
@@ -316,7 +316,7 @@ export default function InvestmentForm({
         </>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Date {isBrokerage ? "" : "(optional)"}</label>
           <input type="date" {...register("purchaseDate")} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />

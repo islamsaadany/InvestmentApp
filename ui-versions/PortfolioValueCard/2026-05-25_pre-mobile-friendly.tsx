@@ -11,21 +11,21 @@ export default function PortfolioValueCard({
   summary: PortfolioSummary;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-4 gap-2">
+    <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <DollarSign className="w-4 h-4" />
           Portfolio Value
         </div>
-        <span className="text-xs text-gray-400 whitespace-nowrap">
+        <span className="text-xs text-gray-400">
           1 USD = {summary.usdToEgpRate.toFixed(2)} EGP
         </span>
       </div>
       <div className="mb-2">
-        <div className="text-2xl sm:text-3xl font-bold text-gray-900 break-words">
+        <div className="text-3xl font-bold text-gray-900">
           {formatCurrency(summary.totalValueEgp, "EGP")}
         </div>
-        <div className="text-base sm:text-lg text-gray-500 mt-1">
+        <div className="text-lg text-gray-500 mt-1">
           {formatCurrency(summary.totalValueUsd, "USD")}
         </div>
       </div>

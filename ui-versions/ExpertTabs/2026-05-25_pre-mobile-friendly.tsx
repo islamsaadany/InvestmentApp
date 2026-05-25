@@ -20,7 +20,7 @@ const TABS: Array<{
 
 export default function ExpertTabs({ mode, onChange }: ExpertTabsProps) {
   return (
-    <div className="flex border-b border-gray-200 bg-white overflow-x-auto">
+    <div className="flex border-b border-gray-200 bg-white">
       {TABS.map((tab) => {
         const Icon = tab.icon;
         const isActive = mode === tab.id;
@@ -28,7 +28,7 @@ export default function ExpertTabs({ mode, onChange }: ExpertTabsProps) {
           <button
             key={tab.id}
             onClick={() => onChange(tab.id)}
-            className={`flex items-center gap-2 px-3 sm:px-5 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
               isActive
                 ? "border-blue-600 text-blue-700 bg-blue-50/40"
                 : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50"

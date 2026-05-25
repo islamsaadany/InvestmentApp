@@ -146,10 +146,10 @@ export default function PerformanceLineChart() {
   }, [investments, chartData]);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-4 gap-2">
+    <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-gray-500">Performance</h3>
-        <div className="flex gap-1 overflow-x-auto">
+        <div className="flex gap-1">
           {PERIODS.map((p) => (
             <button
               key={p}

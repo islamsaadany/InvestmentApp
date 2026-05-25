@@ -76,9 +76,9 @@ export default function TopMovers({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+    <div className="bg-white rounded-xl border border-gray-200 p-6">
       <h3 className="text-sm font-medium text-gray-500 mb-4">Top Movers</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <div className="text-xs text-green-600 font-medium mb-2 flex items-center gap-1">
             <TrendingUp className="w-3 h-3" /> Top Gainers

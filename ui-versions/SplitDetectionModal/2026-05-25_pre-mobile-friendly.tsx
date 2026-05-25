@@ -84,27 +84,27 @@ export default function SplitDetectionModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-black/50 sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={onClose}
     >
       <div
-        className="bg-white sm:rounded-xl shadow-xl sm:max-w-lg w-full h-full sm:h-auto sm:max-h-[85vh] overflow-y-auto"
+        className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-bold text-gray-900">
             Stock Splits Detected
           </h2>
           <button
             onClick={onClose}
-            className="p-2 -mr-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md"
+            className="text-gray-400 hover:text-gray-600"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="px-4 sm:px-6 py-4 space-y-4">
+        <div className="px-6 py-4 space-y-4">
           {pricesFixed.length > 0 && (
             <div className="rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800">
               <span className="font-medium">Price history refreshed for:</span>{" "}
@@ -208,7 +208,7 @@ export default function SplitDetectionModal({
           )}
         </div>
 
-        <div className="px-4 sm:px-6 py-3 border-t border-gray-200 flex justify-end sticky bottom-0 bg-white">
+        <div className="px-6 py-3 border-t border-gray-200 flex justify-end">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"

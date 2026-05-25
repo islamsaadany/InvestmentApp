@@ -369,22 +369,21 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
       </div>
 
       {/* Input */}
-      <div className="border-t border-gray-200 bg-white p-3 sm:p-4">
-        <div className="flex gap-2 sm:gap-3">
+      <div className="border-t border-gray-200 bg-white p-4">
+        <div className="flex gap-3">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={PLACEHOLDER_BY_MODE[mode]}
             rows={1}
-            className="flex-1 resize-none border border-gray-300 rounded-xl px-3 sm:px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-h-32 min-w-0"
+            className="flex-1 resize-none border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-h-32"
             style={{ minHeight: "44px" }}
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            aria-label="Send"
-            className="flex-shrink-0 bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-shrink-0 bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -393,7 +392,7 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
             )}
           </button>
         </div>
-        <p className="hidden sm:block text-xs text-gray-400 mt-2 text-center">
+        <p className="text-xs text-gray-400 mt-2 text-center">
           Shift+Enter for new line · Enter to send · AI responses are not
           financial advice
         </p>
