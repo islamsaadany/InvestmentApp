@@ -830,3 +830,47 @@ The badge on the card is independent of the toggle — it always shows when the 
 ---
 
 *Last Updated: May 26, 2026 — BDS ethical screening filter + indicator on Expert (US Stocks)*
+
+---
+
+## 23. Expert (US Stocks) — BDS badge always visible + tech-company list expansion
+
+**Updated:** May 26, 2026
+
+Two refinements to the BDS feature shipped in section 22:
+
+### Badge now always visible
+
+Previously the BDS chip rendered only when the ticker was on the list — meaning an absent badge was ambiguous (did the system check? or is the company clear?). Now every recommendation card shows one of two states:
+
+- **Green `BDS CLEAR` chip** — ticker is NOT on the BDS list. Click expands a green panel: "Checked against BDS Movement official targets and the AFSC Investigate database. This ticker is not currently listed."
+- **Red `BDS LISTED` chip** — ticker IS on the list. Click expands the red panel with category, reason, last-verified date, and source link (same as before).
+
+Mirrors the always-on Halal badge so the two screening layers feel parallel.
+
+### List expanded with major tech contractors
+
+Added 5 new entries to `lib/bds-list.json` based on AFSC Investigate documentation and "No Tech for Apartheid" campaign coverage:
+
+| Ticker | Reason |
+|---|---|
+| MSFT | Azure cloud + AI tools contracted to Israeli Defense Ministry |
+| GOOGL | Project Nimbus — $1.2B cloud contract with Israeli government/military |
+| GOOG | Project Nimbus (Class C share class of Alphabet) |
+| AMZN | Project Nimbus co-contractor (AWS) |
+| PLTR | Strategic partnership with Israeli Defense Ministry (Jan 2024) |
+
+Total list size: **22 US-listed entries**. Each new entry includes the same `source`, `category`, `reason`, and `lastVerified` fields. All editable in `lib/bds-list.json`.
+
+### Files modified
+
+- `lib/bds-list.json` — added 5 tech-company entries
+- `components/expert/RecommendationCard.tsx` — badge always renders; new green "BDS CLEAR" state + green detail panel for unlisted companies
+
+### Files added
+
+- `ui-versions/RecommendationCard/2026-05-26_before-always-show-bds.tsx` — snapshot
+
+---
+
+*Last Updated: May 26, 2026 — BDS badge always visible + tech-company list expansion*

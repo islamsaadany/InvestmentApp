@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
-import { ChevronDown, ChevronUp, ShieldCheck, AlertTriangle, ShieldOff, Ban, Check, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronUp, ShieldCheck, AlertTriangle, ShieldOff, Ban, ExternalLink } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 import { checkBdsStatus } from "@/lib/bds-screener";
 
@@ -196,29 +196,18 @@ export default function RecommendationCard({ rec }: { rec: Recommendation }) {
               <HalalIcon className="w-3 h-3" />
               {halal.text}
             </span>
-            <button
-              type="button"
-              onClick={() => setBdsDetailOpen((v) => !v)}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border transition-colors ${
-                bdsEntry
-                  ? "bg-red-100 text-red-700 border-red-300 hover:bg-red-200"
-                  : "bg-green-100 text-green-700 border-green-300 hover:bg-green-200"
-              }`}
-              aria-expanded={bdsDetailOpen}
-              aria-label="Show BDS details"
-            >
-              {bdsEntry ? (
-                <>
-                  <Ban className="w-3 h-3" />
-                  BDS LISTED
-                </>
-              ) : (
-                <>
-                  <Check className="w-3 h-3" />
-                  BDS CLEAR
-                </>
-              )}
-            </button>
+            {bdsEntry && (
+              <button
+                type="button"
+                onClick={() => setBdsDetailOpen((v) => !v)}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border bg-red-100 text-red-700 border-red-300 hover:bg-red-200 transition-colors"
+                aria-expanded={bdsDetailOpen}
+                aria-label="Show BDS details"
+              >
+                <Ban className="w-3 h-3" />
+                BDS LISTED
+              </button>
+            )}
           </div>
           <div className="text-sm text-gray-600 mt-0.5 truncate">{rec.company}</div>
         </div>
@@ -278,49 +267,30 @@ export default function RecommendationCard({ rec }: { rec: Recommendation }) {
       </div>
 
       {/* BDS detail panel — opens when the user taps the BDS chip */}
-      {bdsDetailOpen && (
-        bdsEntry ? (
-          <div className="mb-3 bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
-            <div className="flex items-start gap-2 mb-2">
-              <Ban className="w-4 h-4 text-red-700 flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-red-900">
-                  {bdsEntry.category}
-                </div>
-                <div className="text-xs text-red-700">
-                  Last verified: {bdsEntry.lastVerified}
-                </div>
+      {bdsEntry && bdsDetailOpen && (
+        <div className="mb-3 bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
+          <div className="flex items-start gap-2 mb-2">
+            <Ban className="w-4 h-4 text-red-700 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-red-900">
+                {bdsEntry.category}
               </div>
-            </div>
-            <p className="text-red-900 leading-relaxed mb-2">{bdsEntry.reason}</p>
-            <a
-              href={bdsEntry.source}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-red-700 hover:text-red-900 hover:underline"
-            >
-              View source
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-        ) : (
-          <div className="mb-3 bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
-            <div className="flex items-start gap-2">
-              <Check className="w-4 h-4 text-green-700 flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-green-900 mb-1">
-                  Not on the BDS exclusion list
-                </div>
-                <p className="text-green-900 leading-relaxed text-xs">
-                  Checked against BDS Movement official targets and the AFSC
-                  Investigate database. This ticker is not currently listed.
-                  Lists can change — verify independently before relying on
-                  this for ethical screening decisions.
-                </p>
+              <div className="text-xs text-red-700">
+                Last verified: {bdsEntry.lastVerified}
               </div>
             </div>
           </div>
-        )
+          <p className="text-red-900 leading-relaxed mb-2">{bdsEntry.reason}</p>
+          <a
+            href={bdsEntry.source}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-red-700 hover:text-red-900 hover:underline"
+          >
+            View source
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
       )}
 
       {/* Mini chart */}

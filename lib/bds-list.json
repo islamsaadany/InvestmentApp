@@ -164,6 +164,51 @@
       "reason": "Primary Israeli defense contractor; drones, surveillance, and weapons systems used in occupied territory.",
       "source": "https://investigate.afsc.org/company/elbit-systems",
       "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "MSFT",
+      "companyName": "Microsoft Corporation",
+      "companyAliases": ["Microsoft"],
+      "category": "AFSC Investigate",
+      "reason": "Azure cloud services and AI tools contracted to the Israeli Defense Ministry; documented investments in Israeli surveillance technology.",
+      "source": "https://investigate.afsc.org/company/microsoft",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "GOOGL",
+      "companyName": "Alphabet Inc. (Class A)",
+      "companyAliases": ["Alphabet", "Google"],
+      "category": "AFSC Investigate",
+      "reason": "Co-contractor of Project Nimbus — $1.2B cloud computing contract with the Israeli government and military.",
+      "source": "https://investigate.afsc.org/company/alphabet",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "GOOG",
+      "companyName": "Alphabet Inc. (Class C)",
+      "companyAliases": ["Alphabet", "Google"],
+      "category": "AFSC Investigate",
+      "reason": "Co-contractor of Project Nimbus — $1.2B cloud computing contract with the Israeli government and military.",
+      "source": "https://investigate.afsc.org/company/alphabet",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "AMZN",
+      "companyName": "Amazon.com Inc.",
+      "companyAliases": ["Amazon", "AWS"],
+      "category": "AFSC Investigate",
+      "reason": "Co-contractor of Project Nimbus — $1.2B cloud computing contract with the Israeli government and military (AWS).",
+      "source": "https://investigate.afsc.org/company/amazon",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "PLTR",
+      "companyName": "Palantir Technologies",
+      "companyAliases": ["Palantir"],
+      "category": "AFSC Investigate",
+      "reason": "Strategic partnership with the Israeli Defense Ministry (announced Jan 2024) providing analytics and AI platforms.",
+      "source": "https://investigate.afsc.org/company/palantir",
+      "lastVerified": "2026-05-26"
     }
   ]
 }
