@@ -1,8 +1,10 @@
-import { streamText } from "ai";
+import { streamText, tool, stepCountIs } from "ai";
+import { z } from "zod";
 import { getAIModel, getCurrentProvider } from "@/lib/ai-provider";
 import { buildFullSystemPrompt, type ExpertMode } from "@/lib/expert-prompts";
 import { prisma } from "@/lib/db";
 import { enrichInvestments } from "@/lib/enrich";
+import { getCurrentPrice } from "@/lib/market-data";
 
 // Streaming responses can run longer than the 10s Vercel Hobby default.
 // 60s is the Hobby-plan ceiling and is plenty for Gemini Flash replies.
@@ -201,11 +203,68 @@ export async function POST(req: Request) {
           }
         : undefined;
 
+    // Tools — let the agent fetch live prices so it doesn't anchor to stale
+    // training-data prices when generating entry/target/stop levels.
+    const tools = {
+      get_current_price: tool({
+        description:
+          "Fetch the live current market price for a ticker. Use this BEFORE quoting any entry zone, 12-month target, or stop level for a stock, so your levels are anchored to today's price (not your training data). Returns priceUsd as a number, or null if unavailable.",
+        inputSchema: z.object({
+          ticker: z
+            .string()
+            .describe('Ticker symbol, e.g. "MSFT", "JNJ", "AAPL".'),
+          assetType: z
+            .enum(["us_stock", "egx_stock", "crypto", "gold", "silver"])
+            .describe(
+              'Asset type. For US stocks use "us_stock". For Egyptian stocks use "egx_stock".'
+            )
+            .default("us_stock"),
+        }),
+        execute: async ({ ticker, assetType }) => {
+          const tTool = Date.now();
+          try {
+            const price = await getCurrentPrice(assetType, ticker);
+            console.log(
+              `[chat] tool get_current_price(${assetType}, ${ticker}) → ${price} in ${Date.now() - tTool}ms`
+            );
+            if (price == null) {
+              return {
+                ticker,
+                assetType,
+                priceUsd: null,
+                error: "Price unavailable",
+              };
+            }
+            return {
+              ticker,
+              assetType,
+              priceUsd: Math.round(price * 10000) / 10000,
+              fetchedAt: new Date().toISOString(),
+            };
+          } catch (err) {
+            console.error(`[chat] tool get_current_price error:`, err);
+            return {
+              ticker,
+              assetType,
+              priceUsd: null,
+              error: err instanceof Error ? err.message : "fetch failed",
+            };
+          }
+        },
+      }),
+    };
+
     const tStream = Date.now();
     const result = streamText({
       model,
       system: systemPrompt,
       messages: normalized,
+      tools,
+      // Default is stepCountIs(1) — without this the model would emit tool
+      // calls and stop without producing the final text response. Allow up to
+      // 5 steps so the model can call get_current_price for multiple tickers
+      // (e.g. 3-5 stocks in Discover mode) then write its answer.
+      stopWhen: stepCountIs(5),
       providerOptions,
       onError: ({ error: streamError }) => {
         console.error("streamText runtime error:", streamError);

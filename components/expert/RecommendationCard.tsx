@@ -137,6 +137,39 @@ export default function RecommendationCard({ rec }: { rec: Recommendation }) {
   const halal = halalStyle(rec.halal_status || "");
   const HalalIcon = halal.Icon;
 
+  // Stale-levels sanity check — flag when AI's price anchors are clearly out
+  // of sync with the live price. Common cause: model used training-data prices
+  // (e.g. JNJ "$148" when it's actually $234).
+  const staleReasons: string[] = [];
+  if (currentPrice != null && rec.target_12mo != null && rec.target_12mo < currentPrice) {
+    staleReasons.push(
+      `12-month target ($${rec.target_12mo}) is BELOW current price ($${currentPrice.toFixed(2)})`
+    );
+  }
+  if (currentPrice != null && rec.entry_zone) {
+    const farAboveHigh = currentPrice > rec.entry_zone.high * 1.2; // current >20% above entry top
+    const farBelowLow = currentPrice < rec.entry_zone.low * 0.8; // current >20% below entry bottom
+    if (farAboveHigh) {
+      staleReasons.push(
+        `current price ($${currentPrice.toFixed(2)}) is more than 20% above the entry zone top ($${rec.entry_zone.high})`
+      );
+    } else if (farBelowLow) {
+      staleReasons.push(
+        `current price ($${currentPrice.toFixed(2)}) is more than 20% below the entry zone bottom ($${rec.entry_zone.low})`
+      );
+    }
+  }
+  if (
+    currentPrice != null &&
+    rec.stop_loss != null &&
+    rec.stop_loss > currentPrice
+  ) {
+    staleReasons.push(
+      `stop ($${rec.stop_loss}) is ABOVE current price ($${currentPrice.toFixed(2)})`
+    );
+  }
+  const hasStaleLevels = staleReasons.length > 0;
+
   const chartMin = history && history.length > 0
     ? Math.min(...history.map((p) => p.priceUsd))
     : 0;
@@ -185,6 +218,19 @@ export default function RecommendationCard({ rec }: { rec: Recommendation }) {
           )}
         </div>
       </div>
+
+      {/* Stale-levels warning — fires when AI's price anchors clearly conflict
+          with the live current price (most often: training-data prices). */}
+      {hasStaleLevels && (
+        <div className="mb-3 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2 flex gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="text-xs text-amber-900 leading-relaxed">
+            <span className="font-semibold">AI&apos;s price levels look stale.</span>{" "}
+            {staleReasons.join("; ")}. The AI may be anchored to older training
+            data — re-prompt with the current price, or verify before acting.
+          </div>
+        </div>
+      )}
 
       {/* Verdict + Conviction chips */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
@@ -318,8 +364,14 @@ export default function RecommendationCard({ rec }: { rec: Recommendation }) {
           <div className="text-sm font-bold text-emerald-900 mt-0.5">
             {rec.target_12mo != null ? `$${rec.target_12mo}` : "—"}
             {upsidePct != null && (
-              <span className="ml-1 text-[10px] font-medium text-emerald-700">
-                ↑{upsidePct.toFixed(1)}%
+              <span
+                className={`ml-1 text-[10px] font-medium ${
+                  upsidePct >= 0 ? "text-emerald-700" : "text-red-700"
+                }`}
+              >
+                {upsidePct >= 0 ? "↑" : "↓"}
+                {upsidePct >= 0 ? "+" : ""}
+                {upsidePct.toFixed(1)}%
               </span>
             )}
           </div>
@@ -329,8 +381,13 @@ export default function RecommendationCard({ rec }: { rec: Recommendation }) {
           <div className="text-sm font-bold text-red-900 mt-0.5">
             {rec.stop_loss != null ? `$${rec.stop_loss}` : "—"}
             {stopPct != null && (
-              <span className="ml-1 text-[10px] font-medium text-red-700">
-                ↓{Math.abs(stopPct).toFixed(1)}%
+              <span
+                className={`ml-1 text-[10px] font-medium ${
+                  stopPct >= 0 ? "text-amber-700" : "text-red-700"
+                }`}
+              >
+                {stopPct >= 0 ? "↑+" : "↓"}
+                {stopPct.toFixed(1)}%
               </span>
             )}
           </div>

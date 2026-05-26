@@ -718,3 +718,47 @@ The US Stocks Expert tab previously rendered long markdown blobs for every recom
 ---
 
 *Last Updated: May 26, 2026 — Expert (US Stocks) structured recommendation cards with mini chart + expander*
+
+---
+
+## 21. Expert (US Stocks) — Live-price tool + stale-level safeguards
+
+**Added:** May 26, 2026
+
+**Problem:** The recommendation cards from section 20 surfaced a real failure: the HALAL-EQUITY agent has no live market data, so it quoted training-data prices for entry/target/stop levels. Example: JNJ card showed live price ~$234 (correct), but the AI's target was $170 and stop $140 (both stale, from when JNJ was $148-152 in early 2024). The card also showed "↑-27.5%" (sign-confused arrow) when the math went negative.
+
+**Fix has three layers — defense in depth:**
+
+**Layer 1 — Live-price tool (root cause fix)**
+- The chat route now exposes a `get_current_price(ticker, assetType)` tool to the AI agent via the AI SDK's tool-use API
+- System prompt mandates the agent call this tool BEFORE quoting any entry/target/stop for any ticker, in both Analyze and Discover modes
+- `streamText` now uses `stopWhen: stepCountIs(5)` so the model can make multiple tool calls (e.g. 3-5 tickers in Discover mode) before producing the final recommendation
+- The tool calls `getCurrentPrice` from `lib/market-data.ts`, which uses the same Yahoo Finance / CoinGecko cache the rest of the app relies on (5-min TTL)
+- Tool errors are returned to the model rather than thrown, so a failed price fetch never breaks the response — the model is instructed to surface the failure to the user instead of fabricating a price
+
+**Layer 2 — Stale-levels sanity-check banner (safety net)**
+- `RecommendationCard.tsx` now compares the AI's quoted levels against the live current price
+- Shows an amber warning banner at the top of the card when any of these hold:
+  - 12-month target is below current price
+  - Current price is >20% above entry zone top or >20% below entry zone bottom
+  - Stop loss is above current price
+- Catches cases where the model ignores the tool-use instruction or the tool fails silently
+
+**Layer 3 — Arrow sign fix (display bug)**
+- Target's % delta now shows `↑+X.X%` in green for upside, `↓-X.X%` in red for downside (when AI levels disagree with reality)
+- Stop's % delta shows `↓-X.X%` in red for normal downside, `↑+X.X%` in amber when stop is above current (anomaly)
+
+**Files modified:**
+- `app/api/expert/chat/route.ts` — adds `get_current_price` tool definition + `stepCountIs(5)` stop condition
+- `lib/expert/us-stocks-system-prompt.txt` — adds mandatory "LIVE PRICE TOOL" section requiring the agent to call the tool before quoting any level
+- `components/expert/RecommendationCard.tsx` — adds stale-levels banner + fixes arrow sign logic
+
+**Dependencies:** Reuses existing `ai` (v6) and `zod` (v4) packages — no new installs.
+
+**Scope:** US Stocks tab only. The tool is available on all expert modes via the same route, but only the US Stocks system prompt currently mandates its use. Apply the same pattern to Options and Crypto tabs in a follow-up.
+
+**Limitation:** Tool calls add a roundtrip per ticker. For 3-stock Discover mode, expect ~1-3s extra latency from the price fetches (cached after first hit within 5 min). Stays well within the 60s Vercel Hobby ceiling.
+
+---
+
+*Last Updated: May 26, 2026 — Live-price tool wired into Expert (US Stocks) + stale-level safeguards*
