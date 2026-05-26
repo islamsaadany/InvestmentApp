@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getHistoricalPrices } from "@/lib/market-data";
 
 const PERIOD_DAYS: Record<string, number> = {
   "7d": 7,
   "30d": 30,
   "90d": 90,
+  "1m": 30,
   "3m": 90,
   "6m": 180,
   "1y": 365,
@@ -12,16 +14,49 @@ const PERIOD_DAYS: Record<string, number> = {
 
 /**
  * GET /api/analysis/price-history?symbols=BTC,GOLD&period=30d
- * Returns daily price history for given symbols.
- * Used for Chart B (market price with entry points).
+ *   → DB-backed history for owned assets (uses snapshotted assetPriceHistory).
+ *
+ * GET /api/analysis/price-history?ticker=MSFT&assetType=us_stock&period=3m
+ *   → Live history for any ticker (used by Expert recommendation cards).
+ *     Bypasses DB and fetches directly from Yahoo Finance / CoinGecko.
  */
 export async function GET(req: NextRequest) {
   try {
+    const tickerParam = req.nextUrl.searchParams.get("ticker");
+    const assetTypeParam = req.nextUrl.searchParams.get("assetType");
     const symbolsParam = req.nextUrl.searchParams.get("symbols") || "";
     const period = req.nextUrl.searchParams.get("period") || "30d";
 
+    // --- Mode 2: live by-ticker fetch (for non-owned tickers) ---
+    if (tickerParam && assetTypeParam) {
+      const days = PERIOD_DAYS[period] ?? 90;
+      const toDate = new Date();
+      const fromDate = new Date();
+      fromDate.setDate(fromDate.getDate() - days);
+
+      const prices = await getHistoricalPrices(
+        assetTypeParam,
+        tickerParam,
+        fromDate,
+        toDate
+      );
+
+      const result = prices.map((p: { date: string; price: number }) => ({
+        symbol: tickerParam,
+        assetType: assetTypeParam,
+        priceUsd: p.price,
+        date: p.date,
+      }));
+
+      return NextResponse.json(result);
+    }
+
+    // --- Mode 1: DB-backed (existing behavior) ---
     if (!symbolsParam) {
-      return NextResponse.json({ error: "symbols parameter required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "symbols parameter required (or use ticker+assetType)" },
+        { status: 400 }
+      );
     }
 
     const symbols = symbolsParam.split(",").map((s) => s.trim()).filter(Boolean);

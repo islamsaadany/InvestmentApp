@@ -679,4 +679,42 @@ All originals snapshotted to `ui-versions/` per project rule.
 
 ---
 
-*Last Updated: May 25, 2026 — Mobile + tablet responsive layout across all pages*
+## 20. Expert (US Stocks) — Structured Recommendation Cards
+
+**Added:** May 26, 2026
+
+The US Stocks Expert tab previously rendered long markdown blobs for every recommendation. Now, when the HALAL-EQUITY agent recommends a stock (Analyze or Discover mode), it emits a structured `<recommendation>` JSON block per stock, and the frontend renders each block as a rich card with a live mini chart instead of plain text.
+
+**What the user sees per stock:**
+- Ticker + company name + green/amber/red Halal status badge
+- Live current price (from `/api/market/price`) + 1-day change derived from history
+- Verdict chip (BUY / WAIT / etc) + Conviction chip (HIGH/MOD/LOW) + position-size badge
+- Mini area chart with 1M / 3M / 6M / 1Y period selector
+  - Dashed reference lines for entry zone (indigo), 12-month target (green), and stop (red)
+- 3-column price ladder: Entry / Target (+%) / Stop (-%)
+- One-line summary in a blue-bordered callout
+- "Understand more ▾" expander — reveals sector, screening source, full "why", target rationale, stop rationale, risks (3-5), catalysts (3-5), purification note
+- Footer disclaimer: "Levels suggested by AI on {date}; verify against current price."
+
+**Streaming-safe parsing:** `MessageBubble` parses `<recommendation>...</recommendation>` blocks out of the assistant text. Unclosed blocks (still streaming) are hidden until the closing tag arrives — users never see half-written JSON. Malformed JSON falls back to showing the raw block. Prose around the blocks renders as markdown as before.
+
+**Scope:** US Stocks tab only. Options and Crypto tabs unchanged (their agents still emit markdown). Same pattern can be applied to those tabs in a later pass.
+
+**Files added:**
+- `components/expert/RecommendationCard.tsx` — card component with mini chart + expander
+- `ui-versions/MessageBubble/2026-05-26_before-recommendation-cards.tsx` — pre-change snapshot
+
+**Files modified:**
+- `lib/expert/us-stocks-system-prompt.txt` — added STRUCTURED RECOMMENDATION FORMAT section requiring `<recommendation>` JSON blocks; removed the "display disclaimer at start" instruction (the UI banner already covers this)
+- `components/expert/MessageBubble.tsx` — splits assistant content into prose segments + recommendation cards; widens bubble width when cards are present
+- `app/api/analysis/price-history/route.ts` — new "by ticker" mode (`?ticker=MSFT&assetType=us_stock&period=3m`) that fetches live history via `getHistoricalPrices` for tickers the user doesn't own, so the chart works on any recommended stock
+
+**API behavior change:**
+- `GET /api/analysis/price-history` now supports two modes:
+  - Existing: `?symbols=BTC,GOLD&period=30d` (DB-backed, owned assets)
+  - New: `?ticker=MSFT&assetType=us_stock&period=3m` (live, any ticker)
+- Period values supported across both modes: `7d`, `30d`, `90d`, `1m`, `3m`, `6m`, `1y`, `all`
+
+---
+
+*Last Updated: May 26, 2026 — Expert (US Stocks) structured recommendation cards with mini chart + expander*
