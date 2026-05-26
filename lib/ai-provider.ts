@@ -7,7 +7,7 @@ type AIProvider = "anthropic" | "google" | "openai";
 
 const PROVIDER_DEFAULTS: Record<AIProvider, string> = {
   anthropic: "claude-opus-4-20250514",
-  google: "gemini-2.0-flash",
+  google: "gemini-2.5-flash",
   openai: "gpt-4o",
 };
 

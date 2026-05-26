@@ -244,19 +244,31 @@ export async function POST(req: Request) {
             controller.enqueue(encoder.encode(chunk));
           }
           if (chunkCount === 0) {
-            // Try to read finishReason — Gemini blocks for safety/recitation
-            // surface here as 'content-filter' or 'other'.
+            // Gather every signal the SDK exposes so the chat bubble itself
+            // explains why the response was empty (Vercel logs aren't always
+            // accessible). finishReason, usage, warnings, and Gemini's
+            // providerMetadata (which carries safetyRatings + blockReason)
+            // all get dumped inline.
             let reason: string | undefined;
+            let usage: unknown;
+            let warnings: unknown;
+            let providerMetadata: unknown;
             try {
               reason = await result.finishReason;
             } catch {
               // ignore
             }
-            // SDK warnings often explain silent feature drops (e.g. "model
-            // doesn't support providerOptions.google.safetySettings").
             try {
-              const warnings = await result.warnings;
-              if (warnings && warnings.length > 0) {
+              usage = await result.usage;
+            } catch {
+              // ignore
+            }
+            try {
+              warnings = await result.warnings;
+              if (
+                Array.isArray(warnings) &&
+                (warnings as unknown[]).length > 0
+              ) {
                 console.error(
                   "[chat] streamText warnings:",
                   JSON.stringify(warnings)
@@ -265,20 +277,41 @@ export async function POST(req: Request) {
             } catch {
               // ignore
             }
-            const elapsedMs = Date.now() - tStream;
-            let marker: string;
-            if (reason === "content-filter") {
-              marker = `\n\n[server: blocked by Gemini safety filter (finishReason=content-filter). The response was filtered for safety. Consider rephrasing the question to be less direct (e.g. ask for analysis rather than a buy/sell recommendation), or switch the AI_PROVIDER env var to "anthropic" or "openai" if you have those keys.]`;
-            } else if (reason === "length") {
-              marker = `\n\n[server: hit max output tokens with no text (finishReason=length). The system prompt may be too long — try turning off the Portfolio toggle.]`;
-            } else if (reason) {
-              marker = `\n\n[server: stream finished with 0 tokens after ${elapsedMs}ms (finishReason=${reason}). Check Vercel function logs for details.]`;
-            } else {
-              marker = `\n\n[server: stream finished with 0 tokens after ${elapsedMs}ms — provider returned empty completion. Check Vercel function logs for "streamText runtime error" or auth/quota errors.]`;
+            try {
+              providerMetadata = await result.providerMetadata;
+            } catch {
+              // ignore
             }
+            const elapsedMs = Date.now() - tStream;
+            const diagnostic = {
+              finishReason: reason ?? "unknown",
+              usage,
+              warnings,
+              providerMetadata,
+              elapsedMs,
+              systemPromptChars: systemPrompt.length,
+              mode: expertMode,
+              includePortfolio: !!portfolioContext,
+            };
+            let headline: string;
+            if (reason === "content-filter") {
+              headline = `blocked by Gemini safety filter (finishReason=content-filter). Try rephrasing as analysis (not a buy/sell ask), or switch AI_PROVIDER to "anthropic"/"openai".`;
+            } else if (reason === "length") {
+              headline = `hit max output tokens with no text (finishReason=length). System prompt may be too long — try turning off the Portfolio toggle.`;
+            } else if (reason) {
+              headline = `stream finished with 0 tokens after ${elapsedMs}ms (finishReason=${reason}).`;
+            } else {
+              headline = `stream finished with 0 tokens after ${elapsedMs}ms — provider returned empty completion.`;
+            }
+            const marker =
+              `\n\n[server: ${headline}]\n\n` +
+              "```json\n" +
+              JSON.stringify(diagnostic, null, 2) +
+              "\n```";
             controller.enqueue(encoder.encode(marker));
             console.error(
-              `[chat] zero-token completion (mode=${expertMode}, includePortfolio=${!!portfolioContext}, systemPromptChars=${systemPrompt.length}, finishReason=${reason ?? "unknown"})`
+              `[chat] zero-token completion`,
+              JSON.stringify(diagnostic)
             );
           } else {
             console.log(
