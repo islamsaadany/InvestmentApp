@@ -411,10 +411,10 @@ export default function AssetDetailModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-black/30 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
       <div
         ref={popupRef}
-        className="bg-white sm:rounded-xl shadow-xl sm:border sm:border-gray-200 w-full sm:w-[800px] sm:max-w-[95vw] h-full sm:h-auto sm:max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-xl shadow-xl border border-gray-200 w-[800px] max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-100">
@@ -468,7 +468,7 @@ export default function AssetDetailModal({
         </div>
 
         {/* Drill-down + chart-tab row */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-3">
+        <div className="flex items-center justify-between gap-3 px-5 py-3">
           <div className="flex gap-1">
             <button
               onClick={() => setTab("price")}
@@ -492,12 +492,12 @@ export default function AssetDetailModal({
             </button>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-3">
             {showDrilldown && (
               <select
                 value={activeSymbol || ""}
                 onChange={(e) => setActiveSymbol(e.target.value || null)}
-                className="text-xs border border-gray-300 rounded-md px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-[260px] flex-1 sm:flex-none min-w-0"
+                className="text-xs border border-gray-300 rounded-md px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-[260px]"
               >
                 <option value="">Aggregate ({symbolsForType.length} assets)</option>
                 {symbolsForType.map((s) => (
@@ -526,20 +526,19 @@ export default function AssetDetailModal({
         </div>
 
         {/* Chart area */}
-        <div className="flex-1 px-4 sm:px-5 pb-5 overflow-y-auto">
+        <div className="flex-1 px-5 pb-5 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center h-[220px] sm:h-[300px] text-gray-400 text-sm">
+            <div className="flex items-center justify-center h-[300px] text-gray-400 text-sm">
               Loading...
             </div>
           ) : tab === "price" ? (
             priceChartData.length === 0 ? (
-              <div className="flex items-center justify-center h-[220px] sm:h-[300px] text-gray-400 text-sm">
+              <div className="flex items-center justify-center h-[300px] text-gray-400 text-sm">
                 No price data available
               </div>
             ) : (
               <>
-                <div className="h-[240px] sm:h-[320px]">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={320}>
                   <LineChart key={`price-${period}`} data={priceChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                     <XAxis
@@ -652,7 +651,6 @@ export default function AssetDetailModal({
                       })}
                   </LineChart>
                 </ResponsiveContainer>
-                </div>
 
                 {/* Legend with click-to-toggle */}
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
@@ -700,12 +698,11 @@ export default function AssetDetailModal({
               </>
             )
           ) : valueChartData.length === 0 ? (
-            <div className="flex items-center justify-center h-[220px] sm:h-[300px] text-gray-400 text-sm">
+            <div className="flex items-center justify-center h-[300px] text-gray-400 text-sm">
               No value data available
             </div>
           ) : (
-            <div className="h-[240px] sm:h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={320}>
               <AreaChart key={`value-${period}`} data={valueChartData}>
                 <defs>
                   <linearGradient
@@ -761,7 +758,6 @@ export default function AssetDetailModal({
                 />
               </AreaChart>
             </ResponsiveContainer>
-            </div>
           )}
         </div>
       </div>

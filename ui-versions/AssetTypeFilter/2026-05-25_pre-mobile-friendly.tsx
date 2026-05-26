@@ -10,7 +10,7 @@ interface Props {
 
 export default function AssetTypeFilter({ selected, onChange }: Props) {
   return (
-    <div className="flex gap-1 overflow-x-auto -mx-1 px-1 sm:flex-wrap sm:overflow-visible sm:mx-0 sm:px-0">
+    <div className="flex gap-1 flex-wrap">
       <button
         onClick={() => onChange(undefined)}
         className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
@@ -23,7 +23,7 @@ export default function AssetTypeFilter({ selected, onChange }: Props) {
         <button
           key={t}
           onClick={() => onChange(t)}
-          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex-shrink-0 ${
+          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
             selected === t ? "bg-blue-100 text-blue-700" : "text-gray-500 hover:bg-gray-100"
           }`}
         >

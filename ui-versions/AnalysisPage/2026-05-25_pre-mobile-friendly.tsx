@@ -367,12 +367,12 @@ export default function AnalysisPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Analysis</h2>
+      <h2 className="text-2xl font-bold text-gray-900">Analysis</h2>
 
       {/* Filters Row */}
-      <div className="flex flex-wrap items-end gap-3 sm:gap-4">
+      <div className="flex flex-wrap items-end gap-4">
         {/* Asset Type Multi-Select Dropdown */}
-        <div className="flex flex-col gap-1 w-full sm:w-auto">
+        <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-gray-500">Asset Type</label>
           <div className="relative">
             <select
@@ -385,7 +385,7 @@ export default function AnalysisPage() {
                 setSelectedAssetTypes(selected);
                 setSelectedSymbols(new Set());
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:min-w-[180px] sm:w-auto h-[120px]"
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[180px] h-[120px]"
             >
               {ASSET_TYPES.map((type) => (
                 <option key={type} value={type}>
@@ -403,7 +403,7 @@ export default function AnalysisPage() {
         </div>
 
         {/* Specific Asset Multi-Select Dropdown */}
-        <div className="flex flex-col gap-1 w-full sm:w-auto">
+        <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-gray-500">Specific Asset</label>
           <select
             multiple
@@ -414,7 +414,7 @@ export default function AnalysisPage() {
               );
               setSelectedSymbols(selected);
             }}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:min-w-[180px] sm:w-auto h-[120px]"
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[180px] h-[120px]"
           >
             {filteredAssets.map((a) => (
               <option key={`${a.assetType}_${a.symbol}`} value={a.symbol}>
@@ -431,9 +431,9 @@ export default function AnalysisPage() {
         </div>
 
         {/* Period Selector */}
-        <div className="flex flex-col gap-1 w-full sm:w-auto">
+        <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-gray-500">Period</label>
-          <div className="flex gap-1 flex-wrap">
+          <div className="flex gap-1">
             {PERIODS.map((p) => (
               <button
                 key={p}
@@ -456,7 +456,7 @@ export default function AnalysisPage() {
       ) : (
         <>
           {/* Chart A: Portfolio/Asset Value Over Time */}
-          <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h3 className="text-sm font-medium text-gray-500 mb-4">
               {symbolFilter
                 ? `${symbolNames[filteredAssets.find((a) => a.symbol === symbolFilter)?.storeSymbol || ""] || symbolFilter} — Value Over Time`
@@ -470,8 +470,7 @@ export default function AnalysisPage() {
                 No value history data available. Historical data will build over time.
               </div>
             ) : (
-              <div className="h-[240px] sm:h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={valueChartData}>
                   <defs>
                     <linearGradient id="colorValueAnalysis" x1="0" y1="0" x2="0" y2="1">
@@ -502,12 +501,11 @@ export default function AnalysisPage() {
                   />
                 </AreaChart>
               </ResponsiveContainer>
-              </div>
             )}
           </div>
 
           {/* Chart B: Market Price with Entry Points */}
-          <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h3 className="text-sm font-medium text-gray-500 mb-4">
               {symbolFilter
                 ? `${symbolNames[filteredAssets.find((a) => a.symbol === symbolFilter)?.storeSymbol || ""] || symbolFilter} — Market Price & Entry Points`
@@ -522,8 +520,7 @@ export default function AnalysisPage() {
               </div>
             ) : (
               <>
-                <div className="h-[260px] sm:h-[350px]">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={350}>
                   <LineChart data={priceChartData.series as any[]}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} stroke="#94a3b8" />
@@ -627,7 +624,6 @@ export default function AnalysisPage() {
                     })}
                   </LineChart>
                 </ResponsiveContainer>
-                </div>
 
                 {/* Entry Points Legend */}
                 {entryPoints.length > 0 && (

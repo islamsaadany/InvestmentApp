@@ -153,7 +153,7 @@ export default function AllocationPieChart({
   }));
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+    <div className="bg-white rounded-xl border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-gray-500">Asset Allocation</h3>
         <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
@@ -181,8 +181,8 @@ export default function AllocationPieChart({
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Pie Chart */}
-        <div className="overflow-x-auto -mx-1 px-1 h-[220px] sm:h-[260px]">
-          <ResponsiveContainer width="100%" height="100%">
+        <div>
+          <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie
                 data={chartData}
@@ -220,7 +220,7 @@ export default function AllocationPieChart({
         </div>
 
         {/* Asset Summary Table */}
-        <div className="flex flex-col justify-center overflow-x-auto">
+        <div className="flex flex-col justify-center">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-gray-400 border-b border-gray-100">

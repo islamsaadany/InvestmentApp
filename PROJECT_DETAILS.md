@@ -625,4 +625,58 @@ curl -X POST https://your-app.vercel.app/api/admin/backfill-historical-rates \
 
 ---
 
-*Last Updated: May 4, 2026 — Added Historical EGP rate + metal purity tracking + chart range selector*
+## 19. Mobile + Tablet Responsive Layout
+
+**Added:** May 25, 2026
+
+The whole app is now responsive across phone, tablet, and desktop. Desktop UI is unchanged at ≥1024px; only smaller viewports get new layouts.
+
+**Breakpoints used:** `sm` (≥640px), `md` (≥768px), `lg` (≥1024px)
+
+### Phase 1 — Navigation shell
+
+- **Mobile (<768px):** sidebar hidden by default; top header bar with hamburger button, app name, and refresh icon. Tapping hamburger slides sidebar in from the left as an overlay with a dark backdrop. Body scroll is locked while drawer is open. Drawer auto-closes on route change.
+- **Tablet (768-1023px):** existing collapsible icon-only sidebar; mobile header NOT shown.
+- **Desktop (≥1024px):** unchanged.
+- Added `viewport` meta to root layout for proper mobile scaling.
+
+**Files added:**
+- `components/layout/AppShell.tsx` — client wrapper managing nav state (drawer open, collapsed)
+- `components/layout/MobileHeader.tsx` — phone-only top header with hamburger + refresh
+
+**Files modified:**
+- `app/layout.tsx` — added viewport metadata
+- `app/(app)/layout.tsx` — wraps children in `<AppShell>` instead of inline `<Sidebar>` + `<main>`
+- `components/layout/Sidebar.tsx` — refactored to accept `mobileOpen`/`onCloseMobile`/`collapsed`/`onToggleCollapsed` props; renders as fixed overlay drawer on mobile, sticky aside on md+
+
+### Phase 2 — Page layouts
+
+- **InvestmentTable + AlertsPage:** added card-list view (`md:hidden`) for phones; existing table preserved at `md:block`. Each card shows asset/symbol, qty, prices, value, P&L, and edit/delete actions.
+- **All modals** (Investment Form, Asset Detail, Average Down, Alert Form, Split Detection): full-screen on phones (no rounded corners, fills viewport), normal modal at sm+. Close button enlarged for touch (p-2).
+- **InvestmentForm:** all `grid-cols-2` field rows changed to `grid-cols-1 sm:grid-cols-2` so fields stack on phones.
+- **AssetDetailModal:** drill-down row (tabs + symbol picker + period selector) stacks vertically on phones.
+- **AverageDownAnalyzerModal:** summary strip changes from 3-col to 1-col on phones; recommendation card stats from 3-col to 2-col.
+- **AnalysisPage:** filter dropdowns full-width on phones; period selector wraps.
+- **ExpertPage:** watchlist becomes a slide-in left drawer on phones (toggled via a button shown only on mobile); chat takes full width.
+- **Dashboard cards:** smaller padding (`p-4 sm:p-6`) and smaller headings (`text-xl sm:text-2xl`) on phones.
+- **Asset type filter + Expert tabs:** horizontal scroll on phones to prevent wrap/overlap.
+
+### Phase 3 — Polish
+
+- **Chart heights** scale down on phones: Allocation 260→220px, Performance 280→220px, Asset Detail 320→240px, Analysis charts 300→240px / 350→260px.
+- **Touch targets:** modal close buttons, mobile card action buttons, and watchlist remove buttons enlarged to ≥40px tap area. Mobile menu icons use `-ml-2`/`-mr-2` to extend tap area to the edge.
+- **Watchlist remove button on mobile** is now always visible (was hover-only on desktop).
+
+**Files modified across all phases:**
+- Layout: `app/layout.tsx`, `app/(app)/layout.tsx`, `components/layout/Sidebar.tsx`
+- Pages: `app/(app)/page.tsx`, `app/(app)/investments/page.tsx`, `app/(app)/alerts/page.tsx`, `app/(app)/analysis/page.tsx`, `app/(app)/expert/page.tsx`
+- Dashboard: `PortfolioValueCard.tsx`, `AllocationPieChart.tsx`, `PerformanceLineChart.tsx`, `TopMovers.tsx`, `AssetDetailModal.tsx`, `AverageDownAnalyzerModal.tsx`
+- Investments: `InvestmentTable.tsx`, `InvestmentForm.tsx`, `AssetTypeFilter.tsx`
+- Expert: `ChatInterface.tsx`, `WatchlistPanel.tsx`, `ExpertTabs.tsx`
+- Common: `SplitDetectionModal.tsx`
+
+All originals snapshotted to `ui-versions/` per project rule.
+
+---
+
+*Last Updated: May 25, 2026 — Mobile + tablet responsive layout across all pages*

@@ -98,13 +98,15 @@ export default function AlertsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Price Alerts</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Price Alerts</h2>
         <button
           onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 active:bg-blue-800 transition-colors flex-shrink-0"
         >
-          <Plus className="w-4 h-4" /> Add Alert
+          <Plus className="w-4 h-4" />
+          <span className="hidden sm:inline">Add Alert</span>
+          <span className="sm:hidden">Add</span>
         </button>
       </div>
 
@@ -125,58 +127,150 @@ export default function AlertsPage() {
           }
         />
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                <th className="text-left py-3 px-4 font-medium text-gray-500">Symbol</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-500">Condition</th>
-                <th className="text-right py-3 px-4 font-medium text-gray-500">Target Price</th>
-                <th className="text-right py-3 px-4 font-medium text-gray-500">Current Price</th>
-                <th className="text-center py-3 px-4 font-medium text-gray-500">Status</th>
-                <th className="text-right py-3 px-4 font-medium text-gray-500">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {alerts.map((alert) => (
-                <tr key={alert.id} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="py-3 px-4">
-                    <div className="font-medium text-gray-900">{alert.symbol}</div>
-                    <div className="text-xs text-gray-400">{ASSET_TYPE_LABELS[alert.assetType]}</div>
-                  </td>
-                  <td className="py-3 px-4 text-gray-600">Price goes {alert.condition} target</td>
-                  <td className="py-3 px-4 text-right font-medium text-gray-900">{formatCurrency(alert.targetPrice, alert.currency)}</td>
-                  <td className="py-3 px-4 text-right text-gray-700">{alert.currentPrice != null ? formatCurrency(alert.currentPrice) : "—"}</td>
-                  <td className="py-3 px-4 text-center">
-                    {alert.isTriggered ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700"><Bell className="w-3 h-3" /> Triggered</span>
-                    ) : alert.isActive ? (
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">Active</span>
-                    ) : (
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Inactive</span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      {alert.isActive && !alert.isTriggered && (
-                        <button onClick={() => deactivateMutation.mutate(alert.id)} className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-md" title="Deactivate"><BellOff className="w-4 h-4" /></button>
-                      )}
-                      <button onClick={() => { if (confirm("Delete this alert?")) deleteMutation.mutate(alert.id); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md" title="Delete"><Trash2 className="w-4 h-4" /></button>
+        <>
+          {/* Mobile: card list */}
+          <div className="md:hidden space-y-3">
+            {alerts.map((alert) => (
+              <div
+                key={alert.id}
+                className="bg-white rounded-xl border border-gray-200 p-4"
+              >
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-gray-900">
+                      {alert.symbol}
                     </div>
-                  </td>
+                    <div className="text-xs text-gray-400 mt-0.5">
+                      {ASSET_TYPE_LABELS[alert.assetType]}
+                    </div>
+                  </div>
+                  {alert.isTriggered ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 whitespace-nowrap">
+                      <Bell className="w-3 h-3" /> Triggered
+                    </span>
+                  ) : alert.isActive ? (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700 whitespace-nowrap">
+                      Active
+                    </span>
+                  ) : (
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 whitespace-nowrap">
+                      Inactive
+                    </span>
+                  )}
+                </div>
+
+                <div className="text-sm text-gray-600 mb-3">
+                  Price goes <span className="font-medium">{alert.condition}</span>{" "}
+                  <span className="font-medium text-gray-900">
+                    {formatCurrency(alert.targetPrice, alert.currency)}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <div className="text-[11px] uppercase tracking-wide text-gray-400">
+                      Target
+                    </div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {formatCurrency(alert.targetPrice, alert.currency)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] uppercase tracking-wide text-gray-400">
+                      Current
+                    </div>
+                    <div className="text-sm text-gray-800">
+                      {alert.currentPrice != null
+                        ? formatCurrency(alert.currentPrice)
+                        : "—"}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-1 pt-3 border-t border-gray-100">
+                  {alert.isActive && !alert.isTriggered && (
+                    <button
+                      onClick={() => deactivateMutation.mutate(alert.id)}
+                      className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 active:bg-orange-100 rounded-md"
+                      aria-label="Deactivate"
+                    >
+                      <BellOff className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (confirm("Delete this alert?")) deleteMutation.mutate(alert.id);
+                    }}
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 rounded-md"
+                    aria-label="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tablet/desktop: table */}
+          <div className="hidden md:block bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  <th className="text-left py-3 px-4 font-medium text-gray-500">Symbol</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-500">Condition</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-500">Target Price</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-500">Current Price</th>
+                  <th className="text-center py-3 px-4 font-medium text-gray-500">Status</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-500">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {alerts.map((alert) => (
+                  <tr key={alert.id} className="border-b border-gray-50 hover:bg-gray-50">
+                    <td className="py-3 px-4">
+                      <div className="font-medium text-gray-900">{alert.symbol}</div>
+                      <div className="text-xs text-gray-400">{ASSET_TYPE_LABELS[alert.assetType]}</div>
+                    </td>
+                    <td className="py-3 px-4 text-gray-600">Price goes {alert.condition} target</td>
+                    <td className="py-3 px-4 text-right font-medium text-gray-900">{formatCurrency(alert.targetPrice, alert.currency)}</td>
+                    <td className="py-3 px-4 text-right text-gray-700">{alert.currentPrice != null ? formatCurrency(alert.currentPrice) : "—"}</td>
+                    <td className="py-3 px-4 text-center">
+                      {alert.isTriggered ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700"><Bell className="w-3 h-3" /> Triggered</span>
+                      ) : alert.isActive ? (
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">Active</span>
+                      ) : (
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Inactive</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {alert.isActive && !alert.isTriggered && (
+                          <button onClick={() => deactivateMutation.mutate(alert.id)} className="p-1.5 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-md" title="Deactivate"><BellOff className="w-4 h-4" /></button>
+                        )}
+                        <button onClick={() => { if (confirm("Delete this alert?")) deleteMutation.mutate(alert.id); }} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {showAdd && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-black/40 flex items-stretch sm:items-center justify-center z-50 sm:p-4">
+          <div className="bg-white sm:rounded-xl shadow-xl w-full sm:max-w-md h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Add Price Alert</h3>
-              <button onClick={() => setShowAdd(false)} className="p-1 text-gray-400 hover:text-gray-600 rounded-md"><X className="w-5 h-5" /></button>
+              <button
+                onClick={() => setShowAdd(false)}
+                aria-label="Close"
+                className="p-2 -mr-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>

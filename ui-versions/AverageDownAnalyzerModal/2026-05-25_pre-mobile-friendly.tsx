@@ -178,10 +178,10 @@ export default function AverageDownAnalyzerModal({ onClose }: Props) {
   // ends up below the page content visually.
   if (!mounted) return null;
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-stretch sm:items-center justify-center bg-black/30 sm:p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 p-4">
       <div
         ref={popupRef}
-        className="bg-white sm:rounded-xl shadow-xl sm:border sm:border-gray-200 w-full sm:w-[760px] sm:max-w-[95vw] h-full sm:h-auto sm:max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-xl shadow-xl border border-gray-200 w-[760px] max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-100">
@@ -204,7 +204,7 @@ export default function AverageDownAnalyzerModal({ onClose }: Props) {
 
         {/* Summary strip */}
         {!isLoading && summary && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 px-5 py-3 border-b border-gray-100 bg-gray-50">
+          <div className="grid grid-cols-3 gap-2 px-5 py-3 border-b border-gray-100 bg-gray-50">
             <SummaryStat
               label="Strong opportunities"
               value={counts.below_lowest + counts.good_dip}
@@ -224,7 +224,7 @@ export default function AverageDownAnalyzerModal({ onClose }: Props) {
         )}
 
         {/* Filter tabs */}
-        <div className="flex gap-1 px-5 py-3 overflow-x-auto">
+        <div className="flex gap-1 px-5 py-3">
           {FILTER_TABS.map((t) => (
             <button
               key={t.key}
@@ -380,7 +380,7 @@ function RecommendationCard({ rec }: { rec: AnalyzerRecommendation }) {
 
       <p className="text-xs text-gray-600 leading-relaxed mb-3">{rec.detail}</p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+      <div className="grid grid-cols-3 gap-2 text-xs">
         <Stat
           label="Current"
           value={`$${rec.currentPriceChartUnit.toFixed(2)}`}

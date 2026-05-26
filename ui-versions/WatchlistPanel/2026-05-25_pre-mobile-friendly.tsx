@@ -11,14 +11,12 @@ interface WatchlistPanelProps {
   category: WatchlistCategory;
   placeholder?: string;
   emptyHint?: string;
-  fullWidth?: boolean;
 }
 
 export default function WatchlistPanel({
   category,
   placeholder = "Ticker (e.g. AAPL)",
   emptyHint = "Add tickers for the agent to prioritize",
-  fullWidth = false,
 }: WatchlistPanelProps) {
   const queryClient = useQueryClient();
   const [symbol, setSymbol] = useState("");
@@ -69,11 +67,7 @@ export default function WatchlistPanel({
   };
 
   return (
-    <div
-      className={`${
-        fullWidth ? "w-full" : "w-64"
-      } border-r border-gray-200 bg-gray-50 flex flex-col h-full`}
-    >
+    <div className="w-64 border-r border-gray-200 bg-gray-50 flex flex-col h-full">
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center gap-2 mb-3">
           <Eye className="w-4 h-4 text-blue-600" />
@@ -138,10 +132,9 @@ export default function WatchlistPanel({
                 <button
                   onClick={() => removeMutation.mutate(item.symbol)}
                   disabled={removeMutation.isPending}
-                  aria-label={`Remove ${item.symbol}`}
-                  className="md:opacity-0 md:group-hover:opacity-100 p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             ))}

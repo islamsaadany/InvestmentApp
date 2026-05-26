@@ -16,7 +16,6 @@ import {
   PanelLeftOpen,
   RefreshCw,
   Split,
-  X,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
@@ -34,23 +33,12 @@ const links = [
   { href: "/expert", label: "Expert", icon: Brain },
 ];
 
-interface SidebarProps {
-  mobileOpen: boolean;
-  onCloseMobile: () => void;
-  collapsed: boolean;
-  onToggleCollapsed: () => void;
-}
-
-export default function Sidebar({
-  mobileOpen,
-  onCloseMobile,
-  collapsed,
-  onToggleCollapsed,
-}: SidebarProps) {
+export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [checkingSplits, setCheckingSplits] = useState(false);
   const [splitModalOpen, setSplitModalOpen] = useState(false);
@@ -71,48 +59,26 @@ export default function Sidebar({
     }
   };
 
-  // On mobile, sidebar is shown as a fixed overlay drawer.
-  // On md+, it's a normal sticky aside; `collapsed` only applies on md+.
-  const widthClass = collapsed ? "md:w-16" : "md:w-64";
-
   return (
     <aside
-      className={`
-        fixed md:sticky top-0 left-0 z-40 h-screen
-        w-64 ${widthClass}
-        bg-slate-900 p-3 flex flex-col
-        transition-transform duration-200 md:transition-all
-        ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
-        md:translate-x-0
-      `}
+      className={`${
+        collapsed ? "w-16" : "w-64"
+      } bg-slate-900 h-screen sticky top-0 p-3 flex flex-col transition-all duration-200`}
     >
-      {/* Logo + mobile close button */}
+      {/* Logo */}
       <div
-        className={`flex items-center mb-6 md:mb-8 ${
-          collapsed ? "md:justify-center md:px-0" : "px-2"
-        } justify-between`}
+        className={`flex items-center gap-2 mb-8 ${
+          collapsed ? "justify-center px-0" : "px-2"
+        }`}
       >
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-7 h-7 text-blue-400 flex-shrink-0" />
-          {(!collapsed || mobileOpen) && (
-            <h1 className="text-xl font-bold text-white md:block">
-              <span className={collapsed ? "md:hidden" : ""}>InvestTracker</span>
-            </h1>
-          )}
-        </div>
-        {/* Close button — only visible on mobile when drawer is open */}
-        <button
-          type="button"
-          onClick={onCloseMobile}
-          aria-label="Close menu"
-          className="md:hidden p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <TrendingUp className="w-7 h-7 text-blue-400 flex-shrink-0" />
+        {!collapsed && (
+          <h1 className="text-xl font-bold text-white">InvestTracker</h1>
+        )}
       </div>
 
       {/* Nav links */}
-      <nav className="flex flex-col gap-1 flex-1 overflow-y-auto">
+      <nav className="flex flex-col gap-1 flex-1">
         {links.map(({ href, label, icon: Icon }) => {
           const isActive =
             href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -122,15 +88,15 @@ export default function Sidebar({
               href={href}
               title={collapsed ? label : undefined}
               className={`flex items-center gap-3 ${
-                collapsed ? "md:justify-center md:px-0 px-3" : "px-3"
-              } py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2.5"
+              } rounded-lg text-sm font-medium transition-colors ${
                 isActive
                   ? "bg-blue-600/20 text-blue-400"
                   : "text-slate-400 hover:bg-slate-800 hover:text-white"
               }`}
             >
               <Icon className="w-5 h-5 flex-shrink-0" />
-              <span className={collapsed ? "md:hidden" : ""}>{label}</span>
+              {!collapsed && label}
             </Link>
           );
         })}
@@ -141,11 +107,11 @@ export default function Sidebar({
           onClick={() => setAnalyzerOpen(true)}
           title={collapsed ? "Analyzer" : undefined}
           className={`flex items-center gap-3 ${
-            collapsed ? "md:justify-center md:px-0 px-3" : "px-3"
-          } py-2.5 rounded-lg text-sm font-medium transition-colors text-slate-400 hover:bg-slate-800 hover:text-white text-left`}
+            collapsed ? "justify-center px-0 py-2.5" : "px-3 py-2.5"
+          } rounded-lg text-sm font-medium transition-colors text-slate-400 hover:bg-slate-800 hover:text-white text-left`}
         >
           <TrendingDown className="w-5 h-5 flex-shrink-0" />
-          <span className={collapsed ? "md:hidden" : ""}>Analyzer</span>
+          {!collapsed && "Analyzer"}
         </button>
       </nav>
 
@@ -157,7 +123,9 @@ export default function Sidebar({
             if (refreshing) return;
             setRefreshing(true);
             try {
+              // Sync missing days of price data in background (lightweight — only fills gaps)
               fetch("/api/market/sync", { method: "POST" }).catch(() => {});
+              // Refresh all cached queries
               await queryClient.invalidateQueries();
               await queryClient.refetchQueries();
               const now = new Date().toLocaleTimeString("en-US", {
@@ -174,16 +142,14 @@ export default function Sidebar({
           }}
           disabled={refreshing}
           className={`flex items-center gap-3 ${
-            collapsed ? "md:justify-center md:px-0 px-3" : "px-3"
+            collapsed ? "justify-center px-0" : "px-3"
           } py-2.5 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-800 hover:text-white transition-colors disabled:opacity-50`}
           title="Refresh all data"
         >
           <RefreshCw
             className={`w-5 h-5 flex-shrink-0 ${refreshing ? "animate-spin" : ""}`}
           />
-          <span className={collapsed ? "md:hidden" : ""}>
-            {refreshing ? "Refreshing..." : "Refresh"}
-          </span>
+          {!collapsed && (refreshing ? "Refreshing..." : "Refresh")}
         </button>
 
         {/* Check Splits */}
@@ -219,7 +185,7 @@ export default function Sidebar({
           }}
           disabled={checkingSplits}
           className={`flex items-center gap-3 ${
-            collapsed ? "md:justify-center md:px-0 px-3" : "px-3"
+            collapsed ? "justify-center px-0" : "px-3"
           } py-2.5 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-800 hover:text-white transition-colors disabled:opacity-50`}
           title="Check Splits"
         >
@@ -228,16 +194,15 @@ export default function Sidebar({
               checkingSplits ? "animate-spin" : ""
             }`}
           />
-          <span className={collapsed ? "md:hidden" : ""}>
-            {checkingSplits ? "Checking..." : "Check Splits"}
-          </span>
+          {!collapsed &&
+            (checkingSplits ? "Checking..." : "Check Splits")}
         </button>
 
-        {/* Collapse toggle — desktop/tablet only; hidden on mobile (use close X instead) */}
+        {/* Collapse toggle */}
         <button
-          onClick={onToggleCollapsed}
-          className={`hidden md:flex items-center gap-3 ${
-            collapsed ? "md:justify-center md:px-0" : "px-3"
+          onClick={() => setCollapsed(!collapsed)}
+          className={`flex items-center gap-3 ${
+            collapsed ? "justify-center px-0" : "px-3"
           } py-2.5 rounded-lg text-sm font-medium text-slate-500 hover:bg-slate-800 hover:text-white transition-colors`}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
@@ -257,13 +222,11 @@ export default function Sidebar({
           disabled={loggingOut}
           title={collapsed ? "Sign Out" : undefined}
           className={`flex items-center gap-3 ${
-            collapsed ? "md:justify-center md:px-0 px-3" : "px-3"
+            collapsed ? "justify-center px-0" : "px-3"
           } py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-colors disabled:opacity-50`}
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />
-          <span className={collapsed ? "md:hidden" : ""}>
-            {loggingOut ? "Signing out..." : "Sign Out"}
-          </span>
+          {!collapsed && (loggingOut ? "Signing out..." : "Sign Out")}
         </button>
       </div>
 

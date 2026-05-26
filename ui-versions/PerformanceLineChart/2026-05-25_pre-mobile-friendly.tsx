@@ -146,10 +146,10 @@ export default function PerformanceLineChart() {
   }, [investments, chartData]);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-4 gap-2">
+    <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-gray-500">Performance</h3>
-        <div className="flex gap-1 overflow-x-auto">
+        <div className="flex gap-1">
           {PERIODS.map((p) => (
             <button
               key={p}
@@ -173,8 +173,7 @@ export default function PerformanceLineChart() {
           No performance data yet. Data builds over time.
         </div>
       ) : (
-        <div className="h-[220px] sm:h-[280px]">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height={280}>
           <AreaChart data={chartData}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
@@ -219,7 +218,6 @@ export default function PerformanceLineChart() {
             ))}
           </AreaChart>
         </ResponsiveContainer>
-        </div>
       )}
       {purchaseDots.length > 0 && (
         <div className="mt-2 flex items-center gap-1.5 text-xs text-gray-400">

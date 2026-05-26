@@ -35,8 +35,8 @@ export default function DashboardPage() {
   if (!summary) return null;
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+    <div className="space-y-4 sm:space-y-6">
+      <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h2>
       <PortfolioValueCard summary={summary} />
       <AllocationPieChart
         allocation={summary.allocation}
