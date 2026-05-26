@@ -11,7 +11,6 @@ import {
   AlertCircle,
   RefreshCw,
   Brain,
-  Ban,
 } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 import type { ExpertMode } from "@/lib/types";
@@ -101,9 +100,6 @@ function explainError(message: string): string {
 
 export default function ChatInterface({ mode }: ChatInterfaceProps) {
   const [includePortfolio, setIncludePortfolio] = useState(true);
-  // BDS filter — only applies to US Stocks tab. When on, the agent is told
-  // to exclude companies on the BDS-related screening list from recommendations.
-  const [applyBdsFilter, setApplyBdsFilter] = useState(true);
   const [input, setInput] = useState("");
   const [hydrated, setHydrated] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -116,7 +112,7 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
       () =>
         new TextStreamChatTransport({
           api: "/api/expert/chat",
-          body: { includePortfolio, applyBdsFilter, mode },
+          body: { includePortfolio, mode },
           // Wrap fetch so non-2xx responses surface as real errors with the
           // server's JSON message intact. Without this, the transport treats
           // a 503/500 JSON body as an empty stream and the user sees the
@@ -141,7 +137,7 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
             return response;
           },
         }),
-      [includePortfolio, applyBdsFilter, mode]
+      [includePortfolio, mode]
     ),
   });
 
@@ -273,7 +269,7 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
     <div className="flex-1 flex flex-col h-full">
       {/* Chat header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setIncludePortfolio(!includePortfolio)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
@@ -285,24 +281,6 @@ export default function ChatInterface({ mode }: ChatInterfaceProps) {
             <BriefcaseBusiness className="w-3.5 h-3.5" />
             Portfolio {includePortfolio ? "ON" : "OFF"}
           </button>
-          {mode === "us-stocks" && (
-            <button
-              onClick={() => setApplyBdsFilter(!applyBdsFilter)}
-              title={
-                applyBdsFilter
-                  ? "Excluding BDS-listed companies from recommendations"
-                  : "Showing all companies regardless of BDS status"
-              }
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                applyBdsFilter
-                  ? "bg-red-100 text-red-700 border border-red-200"
-                  : "bg-gray-100 text-gray-500 border border-gray-200"
-              }`}
-            >
-              <Ban className="w-3.5 h-3.5" />
-              BDS Filter {applyBdsFilter ? "ON" : "OFF"}
-            </button>
-          )}
         </div>
         <button
           onClick={handleClearChat}

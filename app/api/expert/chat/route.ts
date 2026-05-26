@@ -5,6 +5,7 @@ import { buildFullSystemPrompt, type ExpertMode } from "@/lib/expert-prompts";
 import { prisma } from "@/lib/db";
 import { enrichInvestments } from "@/lib/enrich";
 import { getCurrentPrice } from "@/lib/market-data";
+import { getBdsList } from "@/lib/bds-screener";
 
 // Streaming responses can run longer than the 10s Vercel Hobby default.
 // 60s is the Hobby-plan ceiling and is plenty for Gemini Flash replies.
@@ -103,7 +104,7 @@ export async function POST(req: Request) {
     }
 
     const t0 = Date.now();
-    const { messages, includePortfolio, mode } = await req.json();
+    const { messages, includePortfolio, applyBdsFilter, mode } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return jsonError("Messages are required", 400);
@@ -135,10 +136,30 @@ export async function POST(req: Request) {
     const watchlistContext = formatWatchlistContext(watchlist);
     console.log(`[chat] watchlist fetch took ${Date.now() - tWatchlist}ms`);
 
+    // BDS filter only applies to US Stocks mode currently. Build the exclusion
+    // context only when the user has toggled it on for that mode.
+    let bdsContext: string | undefined;
+    if (applyBdsFilter && expertMode === "us-stocks") {
+      const bdsList = getBdsList();
+      const lines = bdsList.map(
+        (b) =>
+          `- ${b.ticker} (${b.companyName}) — ${b.category}: ${b.reason}`
+      );
+      bdsContext =
+        "The user has activated a BDS-related ethical screening filter. The following US-listed companies are on the user's exclusion list:\n\n" +
+        lines.join("\n") +
+        "\n\nRules:\n" +
+        "1. DO NOT recommend any of these tickers in Discover Mode.\n" +
+        "2. If the user asks about one of these tickers in Analyze Mode, you MUST: (a) acknowledge the BDS listing up front, (b) explain briefly why it is listed, (c) provide your analysis only if the user explicitly asks for it after seeing the BDS notice, (d) suggest one or two Halal alternatives that are NOT on the BDS list.\n" +
+        "3. When recommending Halal alternatives, double-check they are NOT on this exclusion list before emitting a <recommendation> block.\n" +
+        "4. The frontend will display a BDS badge on the card regardless of your output, so be honest with the user — never hide a listed status.";
+    }
+
     const systemPrompt = buildFullSystemPrompt(
       expertMode,
       portfolioContext,
-      watchlistContext || undefined
+      watchlistContext || undefined,
+      bdsContext
     );
     console.log(
       `[chat] systemPrompt built: ${systemPrompt.length} chars (mode=${expertMode}, includePortfolio=${!!portfolioContext})`

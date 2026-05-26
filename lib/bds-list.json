@@ -1,0 +1,169 @@
+{
+  "_meta": {
+    "description": "Companies flagged by BDS-related screening lists. This list is the source of truth for the Expert (US Stocks) BDS indicator and filter. Edit freely — each entry stands alone.",
+    "categories": {
+      "BDS Official": "Listed as an active boycott target on bdsmovement.net",
+      "AFSC Investigate": "Documented by the American Friends Service Committee Investigate database for involvement in Israeli settlements, military, or surveillance"
+    },
+    "notes": [
+      "Only US-listed tickers are included; non-US-listed targets (Puma, AXA, Siemens, Carrefour) are matched by company name only via companyAliases.",
+      "Each entry includes a `source` URL. Verify the entry against the live page before relying on the indicator.",
+      "Update `lastVerified` after a manual recheck."
+    ]
+  },
+  "companies": [
+    {
+      "ticker": "HPQ",
+      "companyName": "HP Inc.",
+      "companyAliases": ["HP Inc", "Hewlett-Packard"],
+      "category": "BDS Official",
+      "reason": "Contracts supplying ID systems and IT infrastructure to Israeli authorities, including the Israeli population registry.",
+      "source": "https://bdsmovement.net/get-involved/what-to-boycott",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "HPE",
+      "companyName": "Hewlett Packard Enterprise",
+      "companyAliases": ["HPE"],
+      "category": "BDS Official",
+      "reason": "Contracts supplying IT services to Israeli authorities; related to HP Inc. split.",
+      "source": "https://bdsmovement.net/get-involved/what-to-boycott",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "CVX",
+      "companyName": "Chevron Corporation",
+      "companyAliases": ["Chevron"],
+      "category": "BDS Official",
+      "reason": "Operator of gas fields claimed by Israel in disputed maritime areas (Leviathan, Tamar).",
+      "source": "https://bdsmovement.net/get-involved/what-to-boycott",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "RMAX",
+      "companyName": "RE/MAX Holdings",
+      "companyAliases": ["RE/MAX", "ReMax"],
+      "category": "BDS Official",
+      "reason": "Franchisees market and sell properties in Israeli settlements in the occupied West Bank.",
+      "source": "https://bdsmovement.net/get-involved/what-to-boycott",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "CAT",
+      "companyName": "Caterpillar Inc.",
+      "companyAliases": ["Caterpillar"],
+      "category": "AFSC Investigate",
+      "reason": "Bulldozers (notably the D9) supplied to Israeli military used in home demolitions in occupied territory.",
+      "source": "https://investigate.afsc.org/company/caterpillar",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "MSI",
+      "companyName": "Motorola Solutions",
+      "companyAliases": ["Motorola Solutions"],
+      "category": "AFSC Investigate",
+      "reason": "Supplies surveillance and communications technology used at Israeli checkpoints and settlements.",
+      "source": "https://investigate.afsc.org/company/motorola-solutions",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "BA",
+      "companyName": "The Boeing Company",
+      "companyAliases": ["Boeing"],
+      "category": "AFSC Investigate",
+      "reason": "Major supplier of military aircraft, missiles, and munitions to the Israeli military.",
+      "source": "https://investigate.afsc.org/company/boeing",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "LMT",
+      "companyName": "Lockheed Martin",
+      "companyAliases": ["Lockheed Martin"],
+      "category": "AFSC Investigate",
+      "reason": "Primary supplier of F-35 and F-16 fighter aircraft to the Israeli military.",
+      "source": "https://investigate.afsc.org/company/lockheed-martin",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "GD",
+      "companyName": "General Dynamics",
+      "companyAliases": ["General Dynamics"],
+      "category": "AFSC Investigate",
+      "reason": "Supplies munitions and military vehicles used by the Israeli military.",
+      "source": "https://investigate.afsc.org/company/general-dynamics",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "NOC",
+      "companyName": "Northrop Grumman",
+      "companyAliases": ["Northrop Grumman"],
+      "category": "AFSC Investigate",
+      "reason": "Supplies military equipment and technology used by the Israeli military.",
+      "source": "https://investigate.afsc.org/company/northrop-grumman",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "LHX",
+      "companyName": "L3Harris Technologies",
+      "companyAliases": ["L3Harris", "L3 Harris"],
+      "category": "AFSC Investigate",
+      "reason": "Supplies communications and electronic warfare systems to the Israeli military.",
+      "source": "https://investigate.afsc.org/company/l3harris-technologies",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "RTX",
+      "companyName": "RTX Corporation",
+      "companyAliases": ["Raytheon", "Raytheon Technologies"],
+      "category": "AFSC Investigate",
+      "reason": "Supplies missile systems (incl. Iron Dome co-production) and military electronics.",
+      "source": "https://investigate.afsc.org/company/rtx-corporation",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "BKNG",
+      "companyName": "Booking Holdings",
+      "companyAliases": ["Booking.com", "Booking Holdings"],
+      "category": "AFSC Investigate",
+      "reason": "Booking.com platform lists rental properties located in Israeli settlements in the occupied West Bank.",
+      "source": "https://investigate.afsc.org/company/booking-holdings",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "ABNB",
+      "companyName": "Airbnb",
+      "companyAliases": ["Airbnb"],
+      "category": "AFSC Investigate",
+      "reason": "Lists rental properties located in Israeli settlements in the occupied West Bank.",
+      "source": "https://investigate.afsc.org/company/airbnb",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "EXPE",
+      "companyName": "Expedia Group",
+      "companyAliases": ["Expedia"],
+      "category": "AFSC Investigate",
+      "reason": "Lists rental and hotel properties located in Israeli settlements.",
+      "source": "https://investigate.afsc.org/company/expedia-group",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "TRIP",
+      "companyName": "Tripadvisor",
+      "companyAliases": ["TripAdvisor"],
+      "category": "AFSC Investigate",
+      "reason": "Lists tourist attractions and rental properties located in Israeli settlements.",
+      "source": "https://investigate.afsc.org/company/tripadvisor",
+      "lastVerified": "2026-05-26"
+    },
+    {
+      "ticker": "ESLT",
+      "companyName": "Elbit Systems",
+      "companyAliases": ["Elbit Systems", "Elbit"],
+      "category": "AFSC Investigate",
+      "reason": "Primary Israeli defense contractor; drones, surveillance, and weapons systems used in occupied territory.",
+      "source": "https://investigate.afsc.org/company/elbit-systems",
+      "lastVerified": "2026-05-26"
+    }
+  ]
+}

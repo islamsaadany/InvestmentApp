@@ -762,3 +762,71 @@ The US Stocks Expert tab previously rendered long markdown blobs for every recom
 ---
 
 *Last Updated: May 26, 2026 — Live-price tool wired into Expert (US Stocks) + stale-level safeguards*
+
+---
+
+## 22. Expert (US Stocks) — BDS ethical screening filter + indicator
+
+**Added:** May 26, 2026
+
+A second ethical screening layer alongside Halal compliance. Companies flagged by BDS-related lists (BDS Movement official targets + AFSC's "Investigate" database) are visibly marked on recommendation cards and excluded from agent recommendations when the user has the filter on.
+
+### What the user sees
+
+- **New toggle in the US Stocks chat header**: "BDS Filter ON/OFF" (red chip styling, default ON). Only appears on the US Stocks tab. Mirrors the existing Portfolio ON/OFF button layout.
+- **Red "BDS LISTED" chip on the recommendation card header**, sitting next to the green HALAL badge. Always shows when the ticker is on the list, regardless of toggle state.
+- **Click the chip** → expands a red detail panel showing category (BDS Official / AFSC Investigate), the documented reason, last-verified date, and a "View source" link to the originating database.
+
+### Source of truth
+
+`lib/bds-list.json` — a hand-curated JSON file with one entry per company. Each entry has:
+
+| Field | Notes |
+|---|---|
+| `ticker` | US-listed symbol (matched case-insensitive) |
+| `companyName` | Full company name |
+| `companyAliases` | Alternate names (currently unused at runtime, kept for future name-based matching) |
+| `category` | "BDS Official" or "AFSC Investigate" |
+| `reason` | 1-2 sentence factual description with no editorial framing |
+| `source` | Direct URL to the originating database page |
+| `lastVerified` | YYYY-MM-DD of last manual recheck |
+
+The list ships with ~17 US-listed entries. Non-US-listed targets (Puma, AXA, Siemens, Carrefour) are intentionally omitted since the US Stocks tab can't recommend them.
+
+**Editing is encouraged** — the JSON is the source of truth; add/remove/reword freely. No code changes needed. The screener (`lib/bds-screener.ts`) re-reads at module load.
+
+### How the filter affects the agent
+
+When `applyBdsFilter` is true AND mode is `us-stocks`, the chat route injects a "BDS FILTER (USER-ACTIVATED)" section into the system prompt containing:
+- The full list of excluded tickers + reasons
+- Explicit rules: don't recommend listed tickers in Discover Mode; in Analyze Mode acknowledge the BDS status before any analysis and suggest a non-listed alternative
+
+The badge on the card is independent of the toggle — it always shows when the ticker matches `lib/bds-list.json`, so the user sees the listing even if they've turned filtering off.
+
+### Scope
+
+- US Stocks tab only. Options + Crypto tabs unchanged.
+- Indicator + toggle live only on Expert recommendation cards. Portfolio table, investment table, and asset detail modal are unchanged.
+
+### Files added
+
+- `lib/bds-list.json` — source-of-truth list with metadata + per-company entries
+- `lib/bds-screener.ts` — pure helper (`checkBdsStatus(ticker)`, `getBdsList()`)
+- `ui-versions/RecommendationCard/2026-05-26_before-bds-badge.tsx` — snapshot
+- `ui-versions/ChatInterface/2026-05-26_before-bds-toggle.tsx` — snapshot
+
+### Files modified
+
+- `components/expert/RecommendationCard.tsx` — BDS chip in header + click-to-expand detail panel with source link
+- `components/expert/ChatInterface.tsx` — BDS Filter toggle button in chat header (US Stocks tab only); flag sent in request body
+- `app/api/expert/chat/route.ts` — reads `applyBdsFilter` from body; builds BDS exclusion context for system prompt
+- `lib/expert-prompts.ts` — `buildFullSystemPrompt` accepts a 4th `bdsContext` arg
+- `lib/expert/us-stocks-system-prompt.txt` — adds ETHICAL SCREENING section noting the filter may inject rules later in the prompt
+
+### API behavior change
+
+- `POST /api/expert/chat` — now accepts `applyBdsFilter: boolean` in body (defaults to false if absent). Only takes effect when `mode === "us-stocks"`.
+
+---
+
+*Last Updated: May 26, 2026 — BDS ethical screening filter + indicator on Expert (US Stocks)*

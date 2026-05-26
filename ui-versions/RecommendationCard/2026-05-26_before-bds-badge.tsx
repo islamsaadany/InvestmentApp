@@ -11,9 +11,8 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
-import { ChevronDown, ChevronUp, ShieldCheck, AlertTriangle, ShieldOff, Ban, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronUp, ShieldCheck, AlertTriangle, ShieldOff } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
-import { checkBdsStatus } from "@/lib/bds-screener";
 
 // Schema the agent emits inside <recommendation>...</recommendation>
 export interface Recommendation {
@@ -80,11 +79,9 @@ function halalStyle(status: string): { bg: string; text: string; Icon: typeof Sh
 
 export default function RecommendationCard({ rec }: { rec: Recommendation }) {
   const [expanded, setExpanded] = useState(false);
-  const [bdsDetailOpen, setBdsDetailOpen] = useState(false);
   const [period, setPeriod] = useState("3m");
 
   const ticker = rec.ticker?.toUpperCase() ?? "";
-  const bdsEntry = checkBdsStatus(ticker);
 
   // Live current price
   const { data: live } = useQuery<LivePrice | null>({
@@ -196,18 +193,6 @@ export default function RecommendationCard({ rec }: { rec: Recommendation }) {
               <HalalIcon className="w-3 h-3" />
               {halal.text}
             </span>
-            {bdsEntry && (
-              <button
-                type="button"
-                onClick={() => setBdsDetailOpen((v) => !v)}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border bg-red-100 text-red-700 border-red-300 hover:bg-red-200 transition-colors"
-                aria-expanded={bdsDetailOpen}
-                aria-label="Show BDS details"
-              >
-                <Ban className="w-3 h-3" />
-                BDS LISTED
-              </button>
-            )}
           </div>
           <div className="text-sm text-gray-600 mt-0.5 truncate">{rec.company}</div>
         </div>
@@ -265,33 +250,6 @@ export default function RecommendationCard({ rec }: { rec: Recommendation }) {
           </span>
         )}
       </div>
-
-      {/* BDS detail panel — opens when the user taps the BDS chip */}
-      {bdsEntry && bdsDetailOpen && (
-        <div className="mb-3 bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
-          <div className="flex items-start gap-2 mb-2">
-            <Ban className="w-4 h-4 text-red-700 flex-shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <div className="font-semibold text-red-900">
-                {bdsEntry.category}
-              </div>
-              <div className="text-xs text-red-700">
-                Last verified: {bdsEntry.lastVerified}
-              </div>
-            </div>
-          </div>
-          <p className="text-red-900 leading-relaxed mb-2">{bdsEntry.reason}</p>
-          <a
-            href={bdsEntry.source}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-red-700 hover:text-red-900 hover:underline"
-          >
-            View source
-            <ExternalLink className="w-3 h-3" />
-          </a>
-        </div>
-      )}
 
       {/* Mini chart */}
       <div className="mb-3">

@@ -44,7 +44,8 @@ export function getKnowledgeBase(mode: ExpertMode): string {
 export function buildFullSystemPrompt(
   mode: ExpertMode,
   portfolioContext?: string,
-  watchlistContext?: string
+  watchlistContext?: string,
+  bdsContext?: string
 ): string {
   const parts: string[] = [];
 
@@ -67,6 +68,11 @@ export function buildFullSystemPrompt(
   if (watchlistContext) {
     parts.push("\n\n--- USER'S WATCHLIST ---\n\n");
     parts.push(watchlistContext);
+  }
+
+  if (bdsContext) {
+    parts.push("\n\n--- BDS FILTER (USER-ACTIVATED) ---\n\n");
+    parts.push(bdsContext);
   }
 
   return parts.join("");
